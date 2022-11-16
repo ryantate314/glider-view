@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GliderView.Data\GliderView.Data.csproj" />
+  </ItemGroup>
+
 </Project>

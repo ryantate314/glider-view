@@ -21,5 +21,18 @@ namespace GliderView.Service
 
             return File.OpenRead(fullPath);
         }
+
+        public IEnumerable<string> GetFiles(string airfield, string trackerId, DateTime date)
+        {
+            string path = Path.Combine(
+                _directory,
+                date.Year.ToString(),
+                String.Format("{0:D2}", date.Month),
+                String.Format("{0:D2}", date.Day),
+                airfield
+            );
+            return Directory.EnumerateFiles(path, $"*.{trackerId}*.igc")
+                .Select(path => Path.GetRelativePath(_directory, path));
+        }
     }
 }

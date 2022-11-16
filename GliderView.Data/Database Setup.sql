@@ -8,7 +8,17 @@ GO
 
 CREATE USER gliderViewer FOR LOGIN gliderViewer;
 
-GRANT SELECT, INSERT, UPDATE ON schema::dbo TO gliderViewer;
+GRANT SELECT, INSERT, UPDATE, EXECUTE ON schema::dbo TO gliderViewer;
+GO
+
+CREATE SCHEMA HangFire;
+
+GO
+
+ALTER AUTHORIZATION ON SCHEMA::HangFire TO gliderViewer;
+GRANT INSERT, UPDATE, DELETE ON SCHEMA::HangFire TO gliderViewer;
+GRANT CREATE TABLE TO gliderViewer;
+
 GO
 
 CREATE TABLE Aircraft (
@@ -18,6 +28,7 @@ CREATE TABLE Aircraft (
 	Description VARCHAR(32),
 	Registration CHAR(6),
 	NumSeats TINYINT,
+	IsGlider BIT,
 	AddedDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	IsDeleted BIT NOT NULL DEFAULT 0
 )
@@ -90,6 +101,8 @@ CREATE TABLE Occupant (
 	UserId INT FOREIGN KEY REFERENCES [User] (UserId),
 	Name VARCHAR(100)
 )
+
+GO
 
 CREATE TYPE Waypoint AS TABLE (
 	Latitude DECIMAL(6,4) NOT NULL,

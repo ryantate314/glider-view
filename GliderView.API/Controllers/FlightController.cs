@@ -8,10 +8,10 @@ namespace GliderView.API.Controllers
     [Route("flights")]
     public class FlightController : Controller
     {
-        private readonly FlightRepository _flightRepo;
+        private readonly IFlightRepository _flightRepo;
         private readonly IgcFileRepository _igcRepo;
 
-        public FlightController(FlightRepository flightRepo, IgcFileRepository igcRepo)
+        public FlightController(IFlightRepository flightRepo, IgcFileRepository igcRepo)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;

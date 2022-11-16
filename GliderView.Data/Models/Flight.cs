@@ -19,5 +19,6 @@ namespace GliderView.Data.Models
         public string? AircraftDescription { get; set; }
         public string? AircraftRegistration { get; set; }
         public int? NumSeats { get; set; }
+        public bool? IsGlider { get; set; }
     }
 }

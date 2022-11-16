@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using GliderView.Data.Models;
+using GliderView.Service;
 using GliderView.Service.Models;
 using Microsoft.Data.SqlClient;
 using System;
@@ -11,13 +12,23 @@ using System.Threading.Tasks;
 
 namespace GliderView.Data
 {
-    public class FlightRepository
+    public class FlightRepository : IFlightRepository
     {
         private readonly string _connectionString;
 
         public FlightRepository(string connectionString)
         {
             _connectionString = connectionString;
+        }
+
+        private SqlConnection GetOpenConnection()
+        {
+            var con = new SqlConnection(_connectionString);
+            if (con.State != ConnectionState.Open)
+            {
+                con.Open();
+            }
+            return con;
         }
 
         public async Task<Service.Models.Flight?> GetFlight(Guid flightId)
@@ -36,6 +47,7 @@ SELECT
     , A.Description AS AircraftDescription
     , A.Registration AS AircraftRegistration
     , A.NumSeats
+    , A.IsGlider
 FROM dbo.Flight F
     LEFT JOIN dbo.Aircraft A
         ON F.AircraftId = A.AircraftId
@@ -71,6 +83,7 @@ SELECT
     , A.Description AS AircraftDescription
     , A.Registration AS AircraftRegistration
     , A.NumSeats
+    , A.IsGlider
 FROM dbo.Flight F
     LEFT JOIN dbo.Aircraft A
         ON F.AircraftId = A.AircraftId
@@ -83,7 +96,7 @@ WHERE F.StartDate >= @startDate
         SELECT
             1
         FROM dbo.Occupant O
-            JOIN dbo.User U
+            JOIN dbo.[User] U
                 ON O.UserId = U.UserId
         WHERE U.UserGuid = @pilotId
             AND F.FlightId = O.FlightId
@@ -105,24 +118,42 @@ WHERE F.StartDate >= @startDate
             }
         }
 
+        public async Task AssignTow(Guid gliderFlightId, Guid towPlaneFlightId)
+        {
+            const string sql = @"
+UPDATE dbo.Flight
+    SET TowId = @towPlaneFlightId
+WHERE FlightGuid = @gliderFlightId
+";
+            using (var con = new SqlConnection(_connectionString))
+            {
+                var args = new
+                {
+                    gliderFlightId,
+                    towPlaneFlightId
+                };
+                await con.ExecuteAsync(sql, args);
+            }
+        }
+
         public async Task AddFlight(Service.Models.Flight flight)
         {
-            using (var con = new SqlConnection(_connectionString))
-            using (var tran = await con.BeginTransactionAsync())
+            using (var con = GetOpenConnection())
+            using (IDbTransaction tran = await con.BeginTransactionAsync())
             {
                 // Insert Flight
-                Guid flightId = await InsertFlight(flight, con);
+                Guid flightId = await InsertFlight(flight, tran);
                 flight.FlightId = flightId;
 
                 // Insert waypoints
                 if (flight.Waypoints != null && flight.Waypoints.Any())
-                    await InsertWaypoints(flight, con);
+                    await InsertWaypoints(flight, tran);
 
                 tran.Commit();
             }
         }
 
-        private Task<Guid> InsertFlight(Service.Models.Flight flight, IDbConnection con)
+        private Task<Guid> InsertFlight(Service.Models.Flight flight, IDbTransaction tran)
         {
             const string sql = @"
 INSERT INTO dbo.Flight (
@@ -165,11 +196,11 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                 flight.TowFlightId,
                 flight.IgcFileName
             };
-            return con.ExecuteScalarAsync<Guid>(sql, flightArgs);
-            
+            return tran.Connection.ExecuteScalarAsync<Guid>(sql, flightArgs, tran);
+
         }
 
-        private Task InsertWaypoints(Service.Models.Flight flight, IDbConnection con)
+        private Task InsertWaypoints(Service.Models.Flight flight, IDbTransaction tran)
         {
             const string sql = @"
 INSERT INTO dbo.Waypoint (
@@ -197,7 +228,7 @@ FROM @waypoints W
                 flight.FlightId,
                 waypoints = flight.Waypoints!.AsTableValuedParameter()
             };
-            return con.ExecuteAsync(sql, args);
+            return tran.Connection.ExecuteAsync(sql, args, tran);
         }
 
         private Service.Models.Flight? ConvertDataToService(Data.Models.Flight flight)
@@ -219,9 +250,74 @@ FROM @waypoints W
                         Description = flight.AircraftDescription!,
                         NumSeats = flight.NumSeats,
                         RegistrationId = flight.AircraftRegistration,
-                        TrackerId = flight.TrackerId
+                        TrackerId = flight.TrackerId,
+                        IsGlider = flight.IsGlider
                     }
             };
+        }
+
+        public async Task<Aircraft?> GetAircraftByTrackerId(string trackerId)
+        {
+            const string sql = @"
+SELECT
+    A.AircraftGuid AS AircraftId
+    , A.Description
+    , A.TrackerId
+    , A.Registration
+    , A.NumSeats
+    , A.IsGlider
+FROM dbo.Aircraft A
+WHERE A.TrackerId = @trackerId
+    AND A.IsDeleted = 0;
+";
+            using (var con = new SqlConnection(_connectionString))
+            {
+                var args = new
+                {
+                    trackerId
+                };
+                return await con.QueryFirstOrDefaultAsync<Aircraft?>(sql, args);
+            }
+        }
+
+        public async Task AddAircraft(Aircraft aircraft)
+        {
+            const string sql = @"
+DECLARE @id UNIQUEIDENTIFIER = NEWID();
+
+INSERT INTO dbo.Aircraft (
+      AircraftGuid
+    , Description
+    , Registration
+    , TrackerId
+    , NumSeats
+    , IsGlider
+)
+VALUES (
+      @id
+    , @description
+    , @registration
+    , @trackerId
+    , @numSeats
+    , @isGlider
+)
+
+SELECT @id;
+";
+
+            using (var con = new SqlConnection(_connectionString))
+            {
+                var args = new
+                {
+                    aircraft.Description,
+                    aircraft.NumSeats,
+                    Registration = aircraft.RegistrationId,
+                    aircraft.TrackerId,
+                    aircraft.IsGlider
+                };
+                Guid id = await con.ExecuteScalarAsync<Guid>(sql, args);
+                aircraft.AircraftId = id;
+            }
         }
     }
 }

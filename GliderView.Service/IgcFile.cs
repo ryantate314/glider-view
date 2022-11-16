@@ -4,18 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GliderView.Jobs
+namespace GliderView.Service
 {
-    public class Waypoint
-    {
-        public DateTime Time { get; set; }
-        public int GpsAltitude { get; set; }
-        public decimal Latitude { get; set; }
-        public decimal Longitude { get; set; }
-    }
+    
 
     public class IgcFile
     {
+        public class Waypoint
+        {
+            public DateTime Time { get; set; }
+            public int GpsAltitude { get; set; }
+            public decimal Latitude { get; set; }
+            public decimal Longitude { get; set; }
+        }
+
         public string GliderType { get; set; }
         public string GliderId { get; set; }
 
@@ -23,7 +25,7 @@ namespace GliderView.Jobs
 
         public List<Waypoint> Waypoints { get; set; } = new List<Waypoint>();
 
-        public static IgcFile Parse(string fileName)
+        public static IgcFile Parse(Stream fileStream)
         {
             const string GLIDER_TYPE = "HFGTYGLIDERTYPE";
             const string GLIDER_ID = "HFGIDGLIDERID";
@@ -31,7 +33,6 @@ namespace GliderView.Jobs
 
             var parsedFile = new IgcFile();
 
-            using (var fileStream = File.OpenRead(fileName))
             using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, true))
             {
                 string? line;
@@ -63,6 +64,13 @@ namespace GliderView.Jobs
                         parsedFile.DateOfFlight = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
                     }
                 }
+            }
+
+            if (parsedFile.DateOfFlight == default
+                || String.IsNullOrEmpty(parsedFile.GliderId)
+            )
+            {
+                throw new Exception("Invalid IGC File");
             }
 
             return parsedFile;

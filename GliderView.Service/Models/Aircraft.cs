@@ -13,5 +13,6 @@ namespace GliderView.Service.Models
         public string? TrackerId { get; set; }
         public string? RegistrationId { get; set; }
         public int? NumSeats { get; set; }
+        public bool? IsGlider { get; set; }
     }
 }
