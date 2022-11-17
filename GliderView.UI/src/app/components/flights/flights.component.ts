@@ -64,4 +64,9 @@ export class FlightsComponent implements OnInit {
     
   }
 
+  public formatDuration(seconds: number): string {
+    return moment.duration(seconds, 'second')
+      .humanize({ m: 60 });
+  }
+
 }

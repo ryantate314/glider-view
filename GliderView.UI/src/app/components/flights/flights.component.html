@@ -1,8 +1,18 @@
-<h1>Flights</h1>
+<div class="container-fluid">
+    <h1>Flights</h1>
 
-<div *ngFor="let flight of flights$ | async">
-    <p>{{flight.aircraft?.description}}</p>
-    <p>{{flight.startDate | date}}</p>
-    <button (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download</button>
-    <button (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Download</button>
+    <mat-card *ngFor="let flight of flights$ | async" class="mb-4">
+        <mat-card-title>
+            <p>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</p>
+        </mat-card-title>
+        <mat-card-content>
+            <p>{{ formatDuration(flight.duration) }}</p>
+            <button mat-mini-fab color="accent" (click)="downloadIgc(flight)" *ngIf="flight.igcFileName" title="Download IGC File" aria-label="Download IGC File">
+                <mat-icon>file_download</mat-icon>
+            </button>
+            <button mat-mini-fab color="accent" (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">
+                <mat-icon>file_upload</mat-icon>
+            </button>
+        </mat-card-content>
+    </mat-card>
 </div>

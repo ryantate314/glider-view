@@ -20,6 +20,12 @@ export class FlightService {
           endDate: endDate.toISOString()
         }
       }
+    ).pipe(
+      map(flights => flights.map(flight => ({
+        ...flight,
+        startDate: new Date(flight.startDate + "Z"),
+        endDate: new Date(flight.endDate + "Z")
+      })))
     )
   }
 
