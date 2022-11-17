@@ -113,7 +113,7 @@ WHERE F.StartDate >= @startDate
                     AircraftId = search.AircraftId
                 };
                 return (await con.QueryAsync<Data.Models.Flight>(sql, args))
-                    .Select(ConvertDataToService)
+                    .Select(flight => ConvertDataToService(flight)!)
                     .ToList();
             }
         }
