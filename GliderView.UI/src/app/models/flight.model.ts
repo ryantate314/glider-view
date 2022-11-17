@@ -3,7 +3,13 @@ export interface Flight {
     startDate: Date;
     endDate: Date;
     duration: number;
-    aircraft: string;
+    aircraft: Aircraft | null;
     releaseAltitude: number;
     maxAltitude: number;
+    igcFileName: string;
+}
+
+export interface Aircraft {
+    aircraftId: string;
+    description: string;
 }

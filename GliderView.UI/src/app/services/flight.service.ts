@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Flight } from '../models/flight.model';
 
@@ -21,5 +21,39 @@ export class FlightService {
         }
       }
     )
+  }
+
+  private getFileNameFromContentDisposition(contentDisposition: string | null): string | null {
+    if (!contentDisposition)
+      return null;
+
+    let fileName = contentDisposition.split(";")
+      .map(x => x.trim())
+      .filter(x => x.startsWith("filename="));
+
+    if (fileName.length == 0)
+      return null;
+
+    return fileName[0].split("=")[1];
+  }
+
+  public downloadIgcFile(flightId: string): Observable<File> {
+    return this.http.get(
+      `${environment.apiUrl}/flights/${flightId}/igc`,
+      {
+        observe: "response",
+        responseType: "blob"
+      }
+    ).pipe(
+      map((response: HttpResponse<any>) => {
+        
+        const fileName = this.getFileNameFromContentDisposition(response.headers.get('content-disposition'))
+          || "flight.igc";
+
+        let file = new File([response.body], fileName, { type: "text/plain" });
+
+        return file;
+      })
+    );
   }
 }

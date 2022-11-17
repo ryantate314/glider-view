@@ -1,6 +1,8 @@
 <h1>Flights</h1>
 
 <div *ngFor="let flight of flights$ | async">
-    <p>{{flight.aircraft}}</p>
+    <p>{{flight.aircraft?.description}}</p>
     <p>{{flight.startDate | date}}</p>
+    <button (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download</button>
+    <button (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Download</button>
 </div>

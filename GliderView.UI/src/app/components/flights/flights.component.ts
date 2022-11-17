@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { map, Observable, switchMap, tap } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
+import * as FileSaver from 'file-saver';
 
 import * as moment from 'moment';
 
@@ -45,6 +46,21 @@ export class FlightsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    
+  }
+
+  public downloadIgc(flight: Flight) {
+    this.flightService.downloadIgcFile(flight.flightId).subscribe({
+      next: (file) => {
+        FileSaver.saveAs(file);
+      },
+      error: (error) => {
+        console.error(error);
+      }
+    });
+  }
+
+  public uploadIgc(flight: Flight) {
     
   }
 
