@@ -2,14 +2,18 @@
 
 <h3>Manual Entry</h3>
 
-<div class="separator">Or</div>
+<form (submit)="onSubmit()">
 
-<input #igcFileUpload class="d-none" id="igc-file-upload" multiple type="file" />
-<button mat-raised-button (click)="igcFileUpload.click()">Upload IGC File</button>
+    <div class="separator">Or</div>
 
-<mat-divider></mat-divider>
+    <input #igcFileUpload class="d-none" id="igc-file-upload" multiple type="file" (change)="onFileSelected($event)" />
+    <button mat-raised-button (click)="igcFileUpload.click()">Upload IGC File</button>
 
-<div class="mt-4 d-flex justify-content-end">
-    <button mat-raised-button color="primary">Submit</button>
-    <button mat-button class="ms-2">Cancel</button>
-</div>
+    <mat-divider></mat-divider>
+
+    <div class="mt-4 d-flex justify-content-end">
+        <button mat-raised-button color="primary" type="submit">Submit</button>
+        <button mat-button class="ms-2" type="button" (click)="onCancel()">Cancel</button>
+    </div>
+
+</form>
