@@ -25,6 +25,7 @@ namespace GliderView.API
                 app.UseCors(policy =>
                 {
                     policy.AllowAnyOrigin();
+                    policy.AllowAnyHeader();
                 });
                 app.UseHangfireDashboard();
             }
@@ -51,7 +52,11 @@ namespace GliderView.API
                 new IgcFileRepository(config["igcDirectory"]!)
             );
             services.AddTransient<FaaDatabaseProvider>();
+            services.AddTransient<FlightBookClient>(services =>
+                new FlightBookClient(config["flightBookApiUrl"]!, services.GetRequiredService<IHttpClientFactory>())
+            );
             services.AddTransient<IgcService>();
+            
             
 
             Data.Configuration.RegisterServices(services, config);

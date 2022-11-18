@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GliderView.API", "GliderVie
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GliderView.Data", "GliderView.Data\GliderView.Data.csproj", "{392832EA-2491-4956-B148-0FEB85ABEE5B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GliderView.Service", "GliderView.Service\GliderView.Service.csproj", "{F473CE48-2B9D-4097-B8F4-5A4355AB6C9A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GliderView.Service", "GliderView.Service\GliderView.Service.csproj", "{F473CE48-2B9D-4097-B8F4-5A4355AB6C9A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D588506C-9ACC-405C-92AB-31049C9F6D84}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile = Dockerfile
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -54,7 +54,8 @@ namespace GliderView.API.Controllers
             try
             {
                 Stream file = _igcRepo.GetFile(flight.IgcFileName);
-                return File(file, "text/plain", fileDownloadName: flight.IgcFileName);
+                Response.Headers.Add("Access-Control-Expose-Headers", "Content-Disposition");
+                return File(file, "text/plain", fileDownloadName: Path.GetFileName(flight.IgcFileName));
             }
             catch (Exception ex)
             {
@@ -65,5 +66,7 @@ namespace GliderView.API.Controllers
                 throw;
             }
         }
+
+        
     }
 }

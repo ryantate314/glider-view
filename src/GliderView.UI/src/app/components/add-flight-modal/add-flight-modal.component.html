@@ -1,0 +1,15 @@
+<h2>Add a Flight</h2>
+
+<h3>Manual Entry</h3>
+
+<div class="separator">Or</div>
+
+<input #igcFileUpload class="d-none" id="igc-file-upload" multiple type="file" />
+<button mat-raised-button (click)="igcFileUpload.click()">Upload IGC File</button>
+
+<mat-divider></mat-divider>
+
+<div class="mt-4 d-flex justify-content-end">
+    <button mat-raised-button color="primary">Submit</button>
+    <button mat-button class="ms-2">Cancel</button>
+</div>

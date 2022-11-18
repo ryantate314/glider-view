@@ -3,8 +3,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { FlightsComponent } from './components/flights/flights.component';
 
 const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'flights' },
-  { path: 'flights', component: FlightsComponent },
+  { path: '', pathMatch: 'full', redirectTo: 'flights/dashboard' },
+  { path: 'flights/dashboard', component: FlightsComponent },
 ];
 
 @NgModule({

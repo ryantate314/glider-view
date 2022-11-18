@@ -4,8 +4,16 @@ import { map, Observable, switchMap, tap } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
+import { MatDialog } from '@angular/material/dialog';
 
 import * as moment from 'moment';
+import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
+
+interface WeekDay {
+  abbreviation: string;
+  date: string;
+  numFlights: number;
+}
 
 @Component({
   selector: 'app-flights',
@@ -15,22 +23,21 @@ import * as moment from 'moment';
 export class FlightsComponent implements OnInit {
 
   public flights$: Observable<Flight[]>;
+  public weekDays$: Observable<WeekDay[]>;
   public isLoading: boolean = true;
 
-  constructor(private flightService: FlightService, private route: ActivatedRoute) {
+  constructor(
+    private flightService: FlightService,
+    private route: ActivatedRoute,
+    private dialog: MatDialog
+  ) {
 
-    this.flights$ = this.route.queryParams.pipe(
+    this.flights$ = this.route.params.pipe(
       map(params => {
-        let startDate = moment().startOf('day');
-        if (params["startDate"])
-          startDate = moment(params["startDate"]);
-        let endDate = moment().endOf('day');
-        if (params["endDate"])
-          endDate = moment(params["endDate"]);
-        return {
-          startDate,
-          endDate
-        }
+        let date = moment().startOf('day');
+        if (params["date"])
+          date = moment(params["date"]);
+        return date;
       }),
       tap(_ => {
         this.isLoading = true;
@@ -42,6 +49,8 @@ export class FlightsComponent implements OnInit {
         this.isLoading = false;
       })
     );
+
+
 
   }
 
@@ -67,6 +76,12 @@ export class FlightsComponent implements OnInit {
   public formatDuration(seconds: number): string {
     return moment.duration(seconds, 'second')
       .humanize({ m: 60 });
+  }
+
+  public addFlight() {
+    var dialog = this.dialog.open(AddFlightModalComponent, {
+
+    });
   }
 
 }
