@@ -2,12 +2,16 @@ version: "3"
 services:
   ui:
     build: ui
+    ports:
+      - "9003:80"
   api:
     build: server
     volumes:
       - ./data:/app/igcd/data
     environment:
       - environment=Production
+    ports:
+      - "9004:80"
   igcd:
     build: igcd
     volumes:
