@@ -1,7 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as builder
 
-ENV ASPNETCORE_ENVIRONMENT=Production
-ENV igc-filepath=/igc-files
 
 WORKDIR /glider-view
 COPY GliderView.sln .
@@ -15,6 +13,12 @@ RUN dotnet publish ./GliderView.API/GliderView.API.csproj
 
 # app image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine as run
+
+RUN apk add --no-cache icu-libs
+
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV igcDirectory=/igc-files
 
 VOLUME ["/logs"]
 VOLUME ["/igc-files"]
