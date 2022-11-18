@@ -1,6 +1,8 @@
 using GliderView.Service;
 using Hangfire;
 using Hangfire.SqlServer;
+using NLog.Extensions.Logging;
+using NLog.Web;
 
 namespace GliderView.API
 {
@@ -14,6 +16,11 @@ namespace GliderView.API
 
             // Add services to the container.
             ConfigureServices(builder.Services, configuration);
+
+            builder.Logging.ClearProviders();
+            
+            builder.Host.UseNLog();
+            NLog.LogManager.Configuration = new NLogLoggingConfiguration(configuration.GetSection("NLog"));
 
             var app = builder.Build();
 
@@ -35,6 +42,7 @@ namespace GliderView.API
             app.UseAuthorization();
 
             app.MapControllers();
+
 
             app.Run();
         }
