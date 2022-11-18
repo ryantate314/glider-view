@@ -1,0 +1,17 @@
+version: 3
+services:
+  ui:
+    build: ui
+  api:
+    build: server
+    volumes:
+      - ./data:/app/igcd/data
+    environment:
+      - environment=Production
+  igcd:
+    build: igcd
+    volumes:
+      - type: bind
+        source: ./config.yml
+        target: /app/igcd/config.yml
+        read_only: true

@@ -1,0 +1,19 @@
+instance: https://flightbook.glidernet.org
+
+# if relative, igcpath will be evaluated from binary path level
+igcpath: data
+
+webhook:
+  active: true
+  url: "https://api/igcd/webhook"
+  delay: 0
+  headers:
+    "X-Api-Key": "Ryan-Test"
+  airfields:
+    - 92A
+  triggers:
+    udlanding: true
+    # takeoff: true
+    # landing: true
+    # udtakeoff: true
+ids:
