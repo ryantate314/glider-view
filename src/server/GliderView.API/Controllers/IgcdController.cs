@@ -21,7 +21,7 @@ namespace GliderView.API.Controllers
         public IActionResult Webhook([FromBody] IgcdPayload payload)
         {
 
-            if (payload.Type == IgcdPayload.TYPE_LANDING)
+            if (payload.Type == IgcdPayload.TYPE_UNDEFINEDLANDING)
             {
                 _logger.LogInformation($"Received landing webhook for {payload.Id} @ {payload.Airfield}");
 
