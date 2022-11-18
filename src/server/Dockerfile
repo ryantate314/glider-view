@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.1-sdk-nanoserver-1809 AS builder
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as builder
 
 WORKDIR /glider-view
 COPY GliderView.sln .
@@ -11,8 +11,8 @@ COPY . .
 RUN dotnet publish ./GliderView.API/GliderView.API.csproj
 
 # app image
-FROM microsoft/dotnet:2.1-aspnetcore-runtime-nanoserver-1809
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine as run
 
 WORKDIR /glider-view
-COPY --from=builder /glider-view/GliderView.API/bin/Debug/netcoreapp2.0/publish/ .
+COPY --from=builder /glider-view/GliderView.API/bin/Debug/net6.0/publish/ .
 CMD ["dotnet", "GliderView.API.dll"]

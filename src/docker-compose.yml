@@ -5,9 +5,10 @@ services:
     ports:
       - "9003:80"
   api:
-    build: server
+    build:
+      context: ./server
     volumes:
-      - ./data:/app/igcd/data
+      - /mnt/web-hosting/igc-files:/app/igcd/data
     environment:
       - environment=Production
     ports:
@@ -16,6 +17,6 @@ services:
     build: igcd
     volumes:
       - type: bind
-        source: ./config.yml
+        source: ./igcd/config.yml
         target: /app/igcd/config.yml
         read_only: true

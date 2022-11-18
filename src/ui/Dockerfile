@@ -7,4 +7,4 @@ RUN npm run build
 
 FROM nginx:1.23-alpine AS run
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=build /dist/glider-view /usr/share/nginx/html
+COPY --from=build /usr/src/app/dist/glider-view /usr/share/nginx/html
