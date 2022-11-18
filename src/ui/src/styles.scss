@@ -13,34 +13,17 @@
 
 
 
-// Define the palettes for your theme using the Material Design palettes available in palette.scss
-// (imported above). For each palette, you can optionally specify a default, lighter, and darker
-// hue. Available color palettes: https://material.io/design/color/
-$GliderView-primary: mat.define-palette(theme.$blue-palette);
-$GliderView-accent: mat.define-palette(mat.$gray-palette, A200, A100, A400);
 
-// The warn palette is optional (defaults to red).
-$GliderView-warn: mat.define-palette(mat.$red-palette);
-
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
-$GliderView-theme: mat.define-light-theme((
-  color: (
-    primary: $GliderView-primary,
-    accent: $GliderView-accent,
-    warn: $GliderView-warn,
-  )
-));
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include mat.all-component-themes($GliderView-theme);
+@include mat.all-component-themes(theme.$theme);
 
 /* You can add global styles to this file, and also import other style files */
 
 /* Importing Bootstrap SCSS file. */
-@import '~bootstrap/scss/bootstrap';
+@import 'bootstrap/scss/bootstrap';
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
@@ -48,4 +31,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 .flex-right {
   margin-left: auto;
+}
+
+@include media-breakpoint-up(xl) {
+  .w-xl-70 {
+      width: 70%;
+  }
 }

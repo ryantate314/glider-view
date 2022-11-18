@@ -41,6 +41,7 @@ namespace GliderView.API.Controllers
             return Ok(flight);
         }
 
+        [ResponseCache(Duration = 24*60*60)]
         [HttpGet("{flightId}/igc")]
         public async Task<IActionResult> DownloadIgcFile([FromRoute] Guid flightId)
         {

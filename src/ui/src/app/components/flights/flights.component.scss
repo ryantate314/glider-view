@@ -1,0 +1,26 @@
+
+
+.week-container {
+    margin-left: auto;
+    margin-right: auto;
+
+    .week-display {
+
+        flex: 1 1 0px;
+    
+        .week-day {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            // background-color: lightgray;
+        }
+
+        .week-day:hover mat-card {
+            background-color: lightgray;
+        }
+
+        .week-day.active mat-card {
+            background-color: lightgray;
+        }
+    }
+}

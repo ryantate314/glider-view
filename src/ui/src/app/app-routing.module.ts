@@ -5,6 +5,7 @@ import { FlightsComponent } from './components/flights/flights.component';
 const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'flights/dashboard' },
   { path: 'flights/dashboard', component: FlightsComponent },
+  { path: 'flights/dashboard/:date', component: FlightsComponent },
 ];
 
 @NgModule({

@@ -1,32 +1,62 @@
 <div class="container">
-    <div class="d-flex justify-content-between m-4">
-        <h1>Flights</h1>
-        <button mat-fab color="accent" (click)="addFlight()" class="flex-right" title="Add a Flight">
-            <mat-icon>add</mat-icon>
-        </button>
-    </div>
 
-    <div class="week-display">
-        <a *ngFor="let day of weekDays$ | async" class="week-day" [routerLink]="['flights', 'dashboard', day.date]">
-            <p class="day-label">{{ day.abbreviation }}</p>
-            <span class="day-count">{{ day.numFlights }}</span>
-        </a>
-    </div>
+    <ng-container *ngIf="flights$ | async as flights; else loading">
 
-    <mat-card *ngFor="let flight of flights$ | async" class="mb-4">
-        <mat-card-title>
-            <div class="d-flex justify-content-between">
-                <h4>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</h4>
-                <button mat-mini-fab color="accent" (click)="downloadIgc(flight)" *ngIf="flight.igcFileName" title="Download IGC File" aria-label="Download IGC File">
-                    <mat-icon>file_download</mat-icon>
+        <div class="d-none d-md-block w-xl-70 week-container mt-4">
+            <div class="week-display d-flex justify-content-center align-items-center">
+                <button mat-mini-fab class="me-1" (click)="navigateWeekBack()">
+                    <mat-icon>chevron_left</mat-icon>
                 </button>
-                <button mat-mini-fab color="accent" (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">
-                    <mat-icon>file_upload</mat-icon>
+                <a *ngFor="let day of weekDays$ | async" class="week-day ms-1 me-1" [class.active]="day.isActive" [routerLink]="['/flights/dashboard', day.urlDate]">
+                    <mat-card>
+                        <mat-card-title>
+                            <!-- Mon -->
+                            {{ day.date | date: 'EEE' }}
+                        </mat-card-title>
+                        <mat-card-subtitle>
+                            <!-- Jan 1 -->
+                            {{ day.date | date: 'LLL d' }}
+                        </mat-card-subtitle>
+                        <mat-card-content>
+                            <span class="day-count">{{ day.numFlights }} flights</span>
+                        </mat-card-content>
+                    </mat-card>
+                </a>
+                <button mat-mini-fab class="ms-1" (click)="navigateWeekForward()">
+                    <mat-icon>chevron_right</mat-icon>
                 </button>
             </div>
-        </mat-card-title>
-        <mat-card-content>
-            <p>Duration: {{ formatDuration(flight.duration) }}</p>
-        </mat-card-content>
-    </mat-card>
+        </div>
+
+        <div class="d-flex justify-content-between m-4">
+            <h1>Flights</h1>
+            <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
+                <mat-icon>add</mat-icon>
+            </button>
+        </div>
+
+        <mat-card *ngFor="let flight of flights" class="mb-4">
+            <mat-card-title>
+                <div class="d-flex justify-content-between">
+                    <h4>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</h4>
+                    <button mat-mini-fab color="accent" (click)="downloadIgc(flight)" *ngIf="flight.igcFileName" title="Download IGC File" aria-label="Download IGC File">
+                        <mat-icon>file_download</mat-icon>
+                    </button>
+                    <button mat-mini-fab color="accent" (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">
+                        <mat-icon>file_upload</mat-icon>
+                    </button>
+                </div>
+            </mat-card-title>
+            <mat-card-content>
+                <p>Duration: {{ formatDuration(flight.duration) }}</p>
+            </mat-card-content>
+        </mat-card>
+        <p class="text-center" *ngIf="flights.length == 0">No flights on this date.</p>
+    </ng-container>
 </div>
+
+<ng-template #loading>
+    <div class="mt-4">
+        <mat-spinner style="margin-left: auto; margin-right: auto;"></mat-spinner>
+    </div>
+</ng-template>
