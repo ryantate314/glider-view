@@ -20,6 +20,7 @@ namespace GliderView.API.Controllers
         [HttpPost("webhook")]
         public IActionResult Webhook([FromBody] IgcdPayload payload)
         {
+
             if (payload.Type == IgcdPayload.TYPE_LANDING)
             {
                 _logger.LogInformation($"Received landing webhook for {payload.Id} @ {payload.Airfield}");
@@ -35,6 +36,10 @@ namespace GliderView.API.Controllers
             else if (payload.Type == IgcdPayload.TYPE_TESTHOOK)
             {
                 _logger.LogInformation("Received test webhook");
+            }
+            else
+            {
+                _logger.LogDebug($"Received {payload.Type} webhook for {payload.Id} @ {payload.Airfield}");
             }
 
             return Ok();
@@ -57,6 +62,19 @@ namespace GliderView.API.Controllers
                     await _service.UploadAndProcess(file.FileName, stream, airfield);
                 }
             }
+
+            return Ok();
+        }
+
+        [HttpPost("process-file")]
+        public async Task<IActionResult> ProcessFile([FromQuery]string airfield, [FromQuery]string fileName)
+        {
+            if (String.IsNullOrEmpty(fileName))
+                return BadRequest("FileName is null.");
+            if (String.IsNullOrEmpty(airfield))
+                return BadRequest("Airfield is null.");
+
+            await _service.ReadAndProcess(airfield, fileName);
 
             return Ok();
         }

@@ -47,6 +47,22 @@ namespace GliderView.Service
 
             await ProcessIgcFile(fileName, parsedFile, airfield, trackerId);
         }
+
+        public async Task ReadAndProcess(string airfield, string fileName)
+        {
+            string? trackerId = GetTrackerFromFilename(fileName);
+            if (trackerId == null)
+                throw new ArgumentException("File name is not in the proper format.");
+
+            IgcFile parsedFile;
+            using (Stream file = _fileRepo.GetFile(fileName))
+            {
+                parsedFile = IgcFile.Parse(file);
+            }
+
+            await ProcessIgcFile(fileName, parsedFile, airfield, trackerId);
+        }
+
         private string? GetTrackerFromFilename(string filename)
         {
             //2022-11-13_N2750H.C7720C.igc
