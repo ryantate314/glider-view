@@ -8,9 +8,10 @@ services:
     build:
       context: ./server
     volumes:
-      - /mnt/web-hosting/igc-files:/app/igcd/data
+      - /mnt/web-hosting/igc-files:/igc-files
+      - /var/log/glider-view:/logs
     environment:
-      - environment=Production
+      - ASPNETCORE_ENVIRONMENT=Production
     ports:
       - "9004:80"
   igcd:
