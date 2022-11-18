@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,15 +10,19 @@ namespace GliderView.Service
     public class IgcFileRepository
     {
         private readonly string _directory;
+        private readonly ILogger<IgcFileRepository> _logger;
 
-        public IgcFileRepository(string directory)
+        public IgcFileRepository(string directory, ILogger<IgcFileRepository> logger)
         {
             _directory = directory;
+            _logger = logger;
         }
 
         public FileStream GetFile(string filename)
         {
             string fullPath = Path.Combine(_directory, filename);
+
+            _logger.LogDebug("Attemping to read IGC file {0}", fullPath);
 
             return File.OpenRead(fullPath);
         }
@@ -35,6 +40,8 @@ namespace GliderView.Service
         public async Task<string> SaveFile(Stream igcFile, string airfield, string registration, string trackerId, DateTime eventDate)
         {
             string fileName = GenerateFileName(airfield, registration, trackerId, eventDate);
+            
+            _logger.LogDebug("Saving IGC file to {0}", fileName);
 
             using (var fileStream = File.OpenWrite(fileName))
             {

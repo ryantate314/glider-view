@@ -57,7 +57,7 @@ namespace GliderView.API
             services.AddHttpClient();
 
             services.AddTransient<IgcFileRepository>(services =>
-                new IgcFileRepository(config["igcDirectory"]!)
+                new IgcFileRepository(config["igcDirectory"]!, services.GetRequiredService<ILogger<IgcFileRepository>>())
             );
             services.AddTransient<FaaDatabaseProvider>();
             services.AddTransient<FlightBookClient>(services =>
