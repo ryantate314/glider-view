@@ -20,5 +20,12 @@ namespace GliderView.Data.Models
         public string? AircraftRegistration { get; set; }
         public int? NumSeats { get; set; }
         public bool? IsGlider { get; set; }
+
+        // Tow plane
+        public Guid? TowFlightId { get; set; }
+        public string? TowFlightDescription { get; set; }
+        public string? TowFlightRegistration { get; set; }
+        public string? TowFlightTrackerId { get; set; }
+        public Guid? TowAircraftId { get; set; }
     }
 }

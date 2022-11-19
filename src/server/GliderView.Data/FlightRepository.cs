@@ -77,6 +77,10 @@ SELECT
     , F.IgcFilename
     -- The tow plane flight
     , Tow.FlightGuid AS TowFlightId
+    , TowAircraft.AircraftGuid AS TowAircraftId
+    , TowAircraft.Description AS TowAircraftDescription
+    , TowAircraft.Registration AS TowAircraftRegistration
+    , TowAircraft.TrackerId AS TowAircraftTrackerId
 
     , A.AircraftGuid AS AircraftId
     , A.TrackerId
@@ -89,6 +93,8 @@ FROM dbo.Flight F
         ON F.AircraftId = A.AircraftId
     LEFT JOIN dbo.Flight Tow
         ON F.TowId = Tow.FlightId
+    LEFT JOIN dbo.Aircraft TowAircraft
+        ON Tow.AircraftId = TowAircraft.AircraftId
 WHERE F.StartDate >= @startDate
     AND F.StartDate <= @endDate
     AND (@aircraftId IS NULL OR A.AircraftGuid = @aircraftId)
@@ -199,7 +205,7 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                 flight.StartDate,
                 flight.EndDate,
                 flight.Aircraft?.AircraftId,
-                flight.TowFlightId,
+                TowFlightId = flight.TowFlight?.FlightId,
                 flight.IgcFileName
             };
             return tran.Connection.ExecuteScalarAsync<Guid>(sql, flightArgs, tran);
@@ -258,6 +264,21 @@ FROM @waypoints W
                         RegistrationId = flight.AircraftRegistration,
                         TrackerId = flight.TrackerId,
                         IsGlider = flight.IsGlider
+                    },
+                TowFlight = flight.TowFlightId == null
+                    ? null
+                    : new Service.Models.Flight()
+                    {
+                        FlightId = flight.TowFlightId.Value,
+                        Aircraft = flight.TowAircraftId == null
+                            ? null
+                            : new Aircraft()
+                            {
+                                AircraftId = flight.TowAircraftId.Value,
+                                Description = flight.TowFlightDescription,
+                                RegistrationId = flight.TowFlightRegistration,
+                                TrackerId = flight.TowFlightTrackerId
+                            }
                     }
             };
         }
