@@ -122,7 +122,13 @@ WHERE F.StartDate >= @startDate
         {
             const string sql = @"
 UPDATE dbo.Flight
-    SET TowId = @towPlaneFlightId
+    SET TowId = (
+        SELECT
+            FlightId
+        FROM Flight
+        WHERE FlightGuid = @towPlaneFlightId
+            AND IsDeleted = 0
+    )
 WHERE FlightGuid = @gliderFlightId
 ";
             using (var con = new SqlConnection(_connectionString))
@@ -263,7 +269,7 @@ SELECT
     A.AircraftGuid AS AircraftId
     , A.Description
     , A.TrackerId
-    , A.Registration
+    , A.Registration AS RegistrationId
     , A.NumSeats
     , A.IsGlider
 FROM dbo.Aircraft A

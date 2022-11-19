@@ -153,7 +153,8 @@ namespace GliderView.Service
             };
 
             // See if this flight already exists
-            if (flights.Any(x => x.Duration == flight.Duration))
+            if (flights.Any(x => x.Aircraft?.AircraftId == flight.Aircraft.AircraftId
+                && x.StartDate == flight.StartDate))
             {
                 throw new FlightAlreadyExistsException(trackerId, flight.StartDate);
             }
