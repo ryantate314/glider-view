@@ -40,7 +40,7 @@ namespace GliderView.Service
             if (start != null)
                 startTimestamp = GetUnixTimeSeconds(start.Value);
 
-            var url = $"{_url}/api/live/igc/{trackerId}/{startTimestamp}";
+            var url = $"{_url}/live/igc/{trackerId}/{startTimestamp}";
             if (end != null)
                 url = url + "/" + GetUnixTimeSeconds(end.Value);
 
