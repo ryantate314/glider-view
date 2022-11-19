@@ -1,5 +1,6 @@
 ﻿using GliderView.API.Models;
 using GliderView.Service;
+using GliderView.Service.Exeptions;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 
@@ -80,7 +81,7 @@ namespace GliderView.API.Controllers
         }
 
         [NonAction]
-        public Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
+        public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
         {
             var maxIgcRetention = TimeSpan.FromDays(1);
 
@@ -89,10 +90,17 @@ namespace GliderView.API.Controllers
             if ((DateTime.UtcNow - eventDate) > maxIgcRetention)
             {
                 _logger.LogError($"Download did not complete in time. Igc file lost. {airfield};{trackerId};{eventDate}");
-                return Task.CompletedTask;
+                return;
             }
 
-            return _service.DownloadAndProcess(airfield, trackerId);
+            try
+            {
+                await _service.DownloadAndProcess(airfield, trackerId);
+            }
+            catch (FlightAlreadyExistsException ex)
+            {
+                _logger.LogWarning(ex.Message);
+            }
         }
     }
 }

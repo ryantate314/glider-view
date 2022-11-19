@@ -128,8 +128,6 @@ namespace GliderView.Service
             };
             var flights = await _flightRepo.GetFlights(search);
 
-            
-
             Aircraft? aircraft = await _flightRepo.GetAircraftByTrackerId(trackerId);
 
             if (aircraft == null)

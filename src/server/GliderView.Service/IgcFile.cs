@@ -33,7 +33,9 @@ namespace GliderView.Service
 
             var parsedFile = new IgcFile();
 
-            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, true))
+            fileStream.Seek(0, SeekOrigin.Begin);
+
+            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, leaveOpen: true))
             {
                 string? line;
                 while ((line = streamReader.ReadLine()) != null)

@@ -45,9 +45,17 @@ namespace GliderView.Service
                 url = url + "/" + GetUnixTimeSeconds(end.Value);
 
             using (var client = _httpClient.CreateClient())
+            using (var response = await client.GetAsync(url))
             {
-                Stream response = await client.GetStreamAsync(url);
-                return response;
+                response.EnsureSuccessStatusCode();
+
+                // Copy to memory stream because we can't reset the stream from the Http content
+                var memoryStream = new MemoryStream();
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                    stream.CopyTo(memoryStream);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                return memoryStream;
             }
         }
 

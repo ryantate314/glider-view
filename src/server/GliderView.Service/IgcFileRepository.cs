@@ -33,23 +33,37 @@ namespace GliderView.Service
                 _directory,
                 GeneratePath(airfield, date)
             );
+
+            if (!Directory.Exists(path))
+                return new string[] { };
+
             return Directory.EnumerateFiles(path, $"*.{trackerId}*.igc")
                 .Select(path => Path.GetRelativePath(_directory, path));
         }
 
         public async Task<string> SaveFile(Stream igcFile, string airfield, string registration, string trackerId, DateTime eventDate)
         {
-            string fileName = GenerateFileName(airfield, registration, trackerId, eventDate);
-            
-            _logger.LogDebug("Saving IGC file to {0}", fileName);
+            string directory = Path.Combine(
+                _directory,
+                GeneratePath(airfield, eventDate)
+            );
 
-            using (var fileStream = File.OpenWrite(fileName))
+            string fullPath = Path.Combine(
+                directory,
+                GenerateFileName(airfield, registration, trackerId, eventDate)
+            );
+
+            Directory.CreateDirectory(directory);
+
+            _logger.LogDebug("Saving IGC file to {0}", fullPath);
+
+            using (var fileStream = File.OpenWrite(fullPath))
             {
                 igcFile.Seek(0, SeekOrigin.Begin);
                 await igcFile.CopyToAsync(fileStream);
             }
 
-            return fileName;
+            return fullPath;
         }
 
         private string GeneratePath(string airfield, DateTime eventDate)
@@ -75,7 +89,7 @@ namespace GliderView.Service
 
             fileName = fileName + ".igc";
 
-            return Path.Combine(GeneratePath(airfield, eventDate), fileName);
+            return fileName;
         }
     }
 }
