@@ -77,7 +77,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       map(([flights, date]) => flights.filter(x =>
         moment(date).isSame(x.startDate, 'day'))),
       // Order by start date ascending
-      map(flights => flights.sort((a, b) => b.startDate.getUTCDate() - a.startDate.getUTCDate()))
+      map(flights => {
+        return flights.sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+      })
     );
 
     this.weekDays$ = combineLatest([
