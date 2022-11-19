@@ -70,7 +70,7 @@ namespace GliderView.Service
             var match = regex.Match(filename);
             if (!match.Success)
                 return null;
-            return match.Groups[1].Value;
+            return match.Groups[2].Value;
         }
 
         public async Task UploadAndProcess(string fileName, Stream stream, string airfield)

@@ -80,6 +80,28 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
+        public class ProcessFilesRequest
+        {
+            public string Airfield { get; set; }
+            public List<string> FileNames { get; set; }
+        }
+
+        [HttpPost("process-files")]
+        public async Task<IActionResult> ProcessFiles([FromBody] ProcessFilesRequest request)
+        {
+            if (request.FileNames == null)
+                return BadRequest("FileNames is null");
+            if (String.IsNullOrEmpty(request.Airfield))
+                return BadRequest("Airfield is null.");
+
+            foreach (var file in request.FileNames)
+            {
+                await _service.ReadAndProcess(request.Airfield, file);
+            }
+
+            return Ok();
+        }
+
         [NonAction]
         public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
         {
