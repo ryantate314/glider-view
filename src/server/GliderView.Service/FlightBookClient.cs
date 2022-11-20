@@ -2,7 +2,7 @@
 
 namespace GliderView.Service
 {
-    public class FlightBookClient
+    public class FlightBookClient : IFlightBookClient
     {
         private readonly string _url;
         private readonly IHttpClientFactory _httpClient;

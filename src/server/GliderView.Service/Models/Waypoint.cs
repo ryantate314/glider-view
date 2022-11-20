@@ -10,7 +10,7 @@ namespace GliderView.Service.Models
     {
         public DateTime Time { get; set; }
         public int GpsAltitude { get; set; }
-        public decimal Latitude { get; set; }
-        public decimal Longitude { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 }

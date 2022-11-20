@@ -13,25 +13,35 @@ namespace GliderView.Service
 {
     public class IgcService
     {
-        private readonly IgcFileRepository _fileRepo;
+        private readonly IIgcFileRepository _fileRepo;
         private readonly IFlightRepository _flightRepo;
         private readonly ILogger _logger;
-        private readonly FaaDatabaseProvider _faaProvider;
-        private readonly FlightBookClient _flightBookClient;
+        private readonly IFaaDatabaseProvider _faaProvider;
+        private readonly IFlightBookClient _flightBookClient;
+        private readonly FlightAnalyzer _flightAnalyzer;
 
         /// <summary>
         /// seconds
         /// </summary>
         private const int MAX_TOW_FLIGHT_DELAY = 30;
 
+        private class FileNameData
+        {
+            public string Registration { get; set; }
+            public string TrackerId { get; set; }
+            public DateTime EventDate { get; set; }
+        }
 
-        public IgcService(IgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, FaaDatabaseProvider faaProvider, FlightBookClient flightBookClient)
+
+        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IFaaDatabaseProvider faaProvider, IFlightBookClient flightBookClient)
         {
             _fileRepo = fileRepo;
             _flightRepo = flightRepo;
             _logger = logger;
             _faaProvider = faaProvider;
             _flightBookClient = flightBookClient;
+
+            _flightAnalyzer = new FlightAnalyzer();
         }
 
         public async Task DownloadAndProcess(string airfield, string trackerId)
@@ -65,12 +75,23 @@ namespace GliderView.Service
 
         private string? GetTrackerFromFilename(string filename)
         {
+            return ParseFileName(filename)
+                ?.TrackerId;
+        }
+
+        private FileNameData? ParseFileName(string filename)
+        {
             //2022-11-13_N2750H.C7720C.igc
-            var regex = new Regex(@".+_([A-Za-z0-9])+\.([A-Za-z0-9]+)(_[0-9]+)?\.igc$");
+            var regex = new Regex(@"^([0-9\-]+)_([A-Za-z0-9])+\.([A-Za-z0-9]+)(_[0-9]+)?\.igc$");
             var match = regex.Match(filename);
             if (!match.Success)
                 return null;
-            return match.Groups[2].Value;
+            return new FileNameData()
+            {
+                EventDate = DateTime.Parse(match.Groups[0].Value),
+                Registration = match.Groups[1].Value,
+                TrackerId = match.Groups[2].Value
+            };
         }
 
         public async Task UploadAndProcess(string fileName, Stream stream, string airfield)
@@ -159,6 +180,8 @@ namespace GliderView.Service
                 throw new FlightAlreadyExistsException(trackerId, flight.StartDate);
             }
 
+            flight.Statistics = _flightAnalyzer.Analyze(flight);
+
             try
             {
                 // Find tow plane/glider
@@ -166,7 +189,10 @@ namespace GliderView.Service
                 if (relatedFlight != null && aircraft.IsGlider == true)
                 {
                     // We are currently adding the glider flight
-                    flight.TowFlightId = relatedFlight.FlightId;
+                    flight.TowFlight = new Flight()
+                    {
+                        FlightId = relatedFlight.FlightId
+                    };
                 }
                 await _flightRepo.AddFlight(flight);
 
