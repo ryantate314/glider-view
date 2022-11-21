@@ -11,6 +11,7 @@ namespace GliderView.Service.Models
         public Guid? PilotId { get; set; }
         public Guid? AircraftId { get; set; }
 
+        public string? Includes { get; set; }
 
     }
 }

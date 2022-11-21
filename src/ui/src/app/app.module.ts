@@ -17,12 +17,15 @@ import { MatDialogModule } from '@angular/material/dialog'
 import { MatDividerModule } from '@angular/material/divider';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FlightComponent } from './components/flight/flight.component';
+import { NgChartsModule } from 'ng2-charts';
 
 @NgModule({
   declarations: [
     AppComponent,
     FlightsComponent,
-    AddFlightModalComponent
+    AddFlightModalComponent,
+    FlightComponent
   ],
   imports: [
     BrowserModule,
@@ -38,7 +41,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatDialogModule,
     MatDividerModule,
     MatGridListModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    NgChartsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

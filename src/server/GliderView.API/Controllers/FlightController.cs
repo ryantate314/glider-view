@@ -8,10 +8,12 @@ namespace GliderView.API.Controllers
     [Route("flights")]
     public class FlightController : Controller
     {
-        private readonly IFlightRepository _flightRepo;
-        private readonly IgcFileRepository _igcRepo;
+        private const string INCLUDE_WAYPOINTS = "waypoints";
 
-        public FlightController(IFlightRepository flightRepo, IgcFileRepository igcRepo)
+        private readonly IFlightRepository _flightRepo;
+        private readonly IIgcFileRepository _igcRepo;
+
+        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
@@ -28,12 +30,21 @@ namespace GliderView.API.Controllers
         }
 
         [HttpGet("{flightId}")]
-        public async Task<IActionResult> GetById([FromRoute] Guid flightId)
+        public async Task<IActionResult> GetById([FromRoute] Guid flightId, [FromQuery] string includes)
         {
             if (flightId == Guid.Empty)
                 return BadRequest("Flight ID cannot be empty.");
 
             Flight? flight = await _flightRepo.GetFlight(flightId);
+
+            if (!String.IsNullOrEmpty(includes))
+            {
+                var include = includes.Split(",");
+                if (include.Contains(INCLUDE_WAYPOINTS, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    flight.Waypoints = await _flightRepo.GetWaypoints(flightId);
+                }
+            }
 
             if (flight == null)
                 return NotFound();

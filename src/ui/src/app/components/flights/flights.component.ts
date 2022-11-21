@@ -172,10 +172,36 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     );
   }
 
+  public navigateDayForward() {
+    of(true).pipe(
+      withLatestFrom(this.date$)
+    ).subscribe(([_, date]) =>
+      this.navigateToDate(
+        date.clone()
+          .add(1, 'day'))
+    );
+  }
+
+  public navigateDayBackward() {
+    of(true).pipe(
+      withLatestFrom(this.date$)
+    ).subscribe(([_, date]) =>
+      this.navigateToDate(
+        date.clone()
+          .subtract(1, 'day'))
+    );
+  }
+
   private navigateToDate(date: moment.Moment) {
     this.router.navigate([
       '/flights/dashboard',
       date.format('YYYY-MM-DD')
     ]);
+  }
+
+  public mToFt(value: number | undefined | null): number | null {
+    return !value
+      ? null
+      : value! * 3.281;
   }
 }

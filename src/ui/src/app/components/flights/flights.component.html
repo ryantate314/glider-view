@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container pb-4">
 
     <ng-container *ngIf="flights$ | async as flights; else loading">
 
@@ -29,7 +29,7 @@
         </div>
 
         <div class="d-flex justify-content-between m-4">
-            <h1>Flights</h1>
+            <h1>Flights <span class="d-md-none">- {{ (date$ | async)?.toDate() | date: 'shortDate' }}</span></h1>
             <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
                 <mat-icon>add</mat-icon>
             </button>
@@ -38,7 +38,9 @@
         <mat-card *ngFor="let flight of flights" class="mb-4">
             <mat-card-title>
                 <div class="d-flex justify-content-between">
-                    <h4>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</h4>
+                    <a [routerLink]="['/flights', flight.flightId]">
+                        <h4>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</h4>
+                    </a>
                     <button mat-mini-fab color="accent" (click)="downloadIgc(flight)" *ngIf="flight.igcFileName" title="Download IGC File" aria-label="Download IGC File">
                         <mat-icon>file_download</mat-icon>
                     </button>
@@ -48,10 +50,18 @@
                 </div>
             </mat-card-title>
             <mat-card-content>
-                <p>Duration: {{ formatDuration(flight.duration) }}</p>
+                <span>Duration: {{ formatDuration(flight.duration) }}</span>
+                <span class="ms-3">Release Height: {{ mToFt(flight.statistics?.releaseHeight) ?? "Unknown" }}</span>
             </mat-card-content>
         </mat-card>
         <p class="text-center" *ngIf="flights.length == 0">No flights on this date.</p>
+
+        <button mat-fab id="navigate-day-back-button" class="d-md-none" (click)="navigateDayBackward()">
+            <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-fab id="navigate-day-forward-button" class="d-md-none" (click)="navigateDayForward()">
+            <mat-icon>chevron_right</mat-icon>
+        </button>
     </ng-container>
 </div>
 

@@ -1,5 +1,9 @@
 <mat-toolbar color="primary">
-    <span>Glider Viewer</span>
+    <a [routerLink]="['/']" class="navbar-brand">
+        <h1>Glider Viewer</h1>
+    </a>
+    <a [routerLink]="['/']" mat-button class="ms-2">Dashboard</a>
+    <a href="/igc-files" target="_blank" mat-button class="ms-2">IGC File Repository</a>
     
 </mat-toolbar>
 <router-outlet></router-outlet>

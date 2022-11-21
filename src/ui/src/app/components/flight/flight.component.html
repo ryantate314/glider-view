@@ -1,0 +1,37 @@
+<div class="container pt-2">
+    <ng-container *ngIf="flight$ | async as flight; else loading">
+        <h1>{{ flight.aircraft?.description ?? "Unknown Aircraft" }}</h1>
+        <p> {{ flight.startDate | date: 'EEE MM/dd/yyyy h:mm a' }} - {{ flight.endDate | date: 'h:mm a' }}</p>
+
+        <h4>Statistics</h4>
+        <p *ngIf="!flight.statistics">No statistics available for this flight.</p>
+        <div *ngIf="flight.statistics">
+            <p>Max Altitude: {{ mToFt(flight.statistics!.maxAltitude) ?? "Unknown" }}</p>
+        </div>
+    </ng-container>
+</div>
+
+<div class="container-fluid pb-4">
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="map-container" [class.d-none]="!(flight$ | async)">
+                <div class="map-frame">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <canvas baseChart *ngIf="altitudeChartData$ | async as altitudeChartData"
+                [data]="altitudeChartData"
+                [options]="altitudeChartOptions"
+                [type]="'line'">
+            </canvas>
+        </div>
+    </div>
+</div>
+
+<ng-template #loading>
+    <div class="mt-4">
+        <mat-spinner style="margin-left: auto; margin-right: auto;"></mat-spinner>
+    </div>
+</ng-template>

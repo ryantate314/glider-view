@@ -21,11 +21,7 @@ export class FlightService {
         }
       }
     ).pipe(
-      map(flights => flights.map(flight => ({
-        ...flight,
-        startDate: new Date(flight.startDate + "Z"),
-        endDate: new Date(flight.endDate + "Z")
-      })))
+      map(flights => flights.map(this.parseFlight))
     )
   }
 
@@ -61,5 +57,26 @@ export class FlightService {
         return file;
       })
     );
+  }
+
+  public getFlight(id: string): Observable<Flight> {
+    return this.http.get<Flight>(
+      `${environment.apiUrl}/flights/${id}`,
+      {
+        params: {
+          includes: "waypoints"
+        }
+      }
+    ).pipe(
+      map(this.parseFlight)
+    );
+  }
+
+  private parseFlight(flight: Flight): Flight {
+    return {
+      ...flight,
+      startDate: new Date(flight.startDate + "Z"),
+      endDate: new Date(flight.endDate + "Z")
+    };
   }
 }

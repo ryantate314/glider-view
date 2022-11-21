@@ -124,6 +124,27 @@ WHERE F.StartDate >= @startDate
             }
         }
 
+        public async Task<List<Waypoint>> GetWaypoints(Guid flightId)
+        {
+            const string sql = @"
+SELECT
+    W.[Date] AS [Time]
+    , W.Latitude
+    , W.Longitude
+    , W.GpsAltitudeMeters AS GpsAltitude
+FROM Flight F
+    JOIN Waypoint W
+        ON F.FlightId = W.FlightId
+WHERE F.FlightGuid = @flightId
+    AND F.IsDeleted = 0;
+";
+            using (var con = new SqlConnection(_connectionString))
+            {
+                return (await con.QueryAsync<Waypoint>(sql, new { flightId }))
+                    .ToList();
+            }
+        }
+
         public async Task AssignTow(Guid gliderFlightId, Guid towPlaneFlightId)
         {
             const string sql = @"
