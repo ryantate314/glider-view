@@ -1,4 +1,5 @@
-﻿using GliderView.Service.Models;
+﻿using GeoLibrary.Model;
+using GliderView.Service.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,15 @@ namespace GliderView.Service
 {
     public class FlightAnalyzer
     {
+
+        private readonly static Polygon Pattern = new Polygon(new Point[]
+        {
+            new Point(-84.573683, 35.226593),
+            new Point(-84.591593, 35.235328),
+            new Point(-84.579051, 35.219070),
+            new Point(-84.596894, 35.227574)
+        });
+        
         public FlightStatistics Analyze(Flight flight)
         {
             if (flight.Waypoints == null)
@@ -23,18 +33,20 @@ namespace GliderView.Service
 
             var stats = new FlightStatistics()
             {
-                ReleaseHeightMeters = release?.GpsAltitude,
-                MaxAltitudeMeters = data.Max(x => x.GpsAltitude),
+                ReleaseHeight = release?.GpsAltitude,
+                MaxAltitude = data.Max(x => x.GpsAltitude),
             };
 
             if (release != null)
             {
                 var flightAfterRelease = data.Where(x => x.Time > release.Time)
                     .ToList();
-                stats.DistanceTraveledKm = (float)FindDistance(flightAfterRelease);
+                stats.DistanceTraveled = (float)FindDistance(flightAfterRelease);
 
-                stats.AltitudeGainedMeters = FindAltitudeGained(flightAfterRelease);
+                stats.AltitudeGained = FindAltitudeGained(flightAfterRelease);
             }
+
+            stats.PatternEntryAltitude = GetPatternEntry(waypoints)?.GpsAltitude;
 
             return stats;
         }
@@ -53,7 +65,7 @@ namespace GliderView.Service
             return altitudeGained;
         }
 
-        private double FindDistance(List<Waypoint> waypoints)
+        private static double FindDistance(List<Waypoint> waypoints)
         {
             double distance = 0;
 
@@ -71,27 +83,31 @@ namespace GliderView.Service
             return distance;
         }
 
-        double GetDistanceFromLatLonInKm(double lat1, double lon1, double lat2, double lon2)
+        private static double GetDistanceFromLatLonInKm(Point p1, Point p2)
         {
-            const int R = 6371; // Radius of the earth in km
-            var dLat = Deg2Rad(lat2 - lat1);  // deg2rad below
-            var dLon = Deg2Rad(lon2 - lon1);
-            var a =
-              Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-              Math.Cos(Deg2Rad(lat1)) * Math.Cos(Deg2Rad(lat2)) *
-              Math.Sin(dLon / 2) * Math.Sin(dLon / 2)
-              ;
-            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            var d = R * c; // Distance in km
-            return d;
+            return p1.HaversineDistanceTo(p2);
         }
 
-        double Deg2Rad(double deg)
+        private static double GetDistanceFromLatLonInKm(double lat1, double lon1, double lat2, double lon2)
+        {
+            return GetDistanceFromLatLonInKm(
+                new Point(lon1, lat1),
+                new Point(lon2, lat2)
+            );
+        }
+
+        private static double Deg2Rad(double deg)
         {
             const double piRad = Math.PI / 180;
             return deg * piRad;
         }
 
+        private static double Rad2Deg(double rad)
+        {
+            const double piDeg = 180 / Math.PI;
+            return rad * piDeg;
+        }
+        
         private Waypoint? FindReleasePoint(List<Waypoint> waypoints)
         {
             if (waypoints.Count < 10)
@@ -164,6 +180,34 @@ namespace GliderView.Service
             }
 
             return output;
+        }
+
+        private Waypoint? GetPatternEntry(List<Waypoint> waypoints)
+        {
+            // Work backwards from landing
+
+            foreach (var waypoint in waypoints.Reverse<Waypoint>())
+            {
+                if (!Pattern.IsPointInside(new Point(waypoint.Longitude, waypoint.Latitude)))
+                {
+                    return waypoint;
+                }
+            }
+
+            return null;
+        }
+
+        private double GetBearing(double lat1, double lon1, double lat2, double lon2)
+        {
+            double length = GetDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
+
+            double x = Math.Cos(lat2) * Math.Sin(length);
+            //cos θa * sin θb – sin θa * cos θb * cos ∆L
+            double y = Math.Cos(lat1) * Math.Sin(lat2) - Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(length);
+
+            double bearingRad = Math.Atan2(x, y);
+
+            return Rad2Deg(bearingRad);
         }
     }
 }

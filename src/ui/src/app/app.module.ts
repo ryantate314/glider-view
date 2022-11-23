@@ -17,6 +17,7 @@ import { MatDialogModule } from '@angular/material/dialog'
 import { MatDividerModule } from '@angular/material/divider';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
 
@@ -42,7 +43,8 @@ import { NgChartsModule } from 'ng2-charts';
     MatDividerModule,
     MatGridListModule,
     MatProgressSpinnerModule,
-    NgChartsModule
+    MatMenuModule,
+    NgChartsModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

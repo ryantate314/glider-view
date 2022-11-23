@@ -102,12 +102,14 @@ CREATE TABLE Occupant (
 	Name VARCHAR(100)
 )
 
-CREATE TABLE FLightStatistics (
+CREATE TABLE FlightStatistics (
 	FlightStatisticsId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
 	FlightId INT NOT NULL FOREIGN KEY REFERENCES Flight (FLightId),
 	ReleaseHeight INT,
 	AltitudeGained INT,
 	DistanceTraveled FLOAT,
+	MaxAltitude INT,
+	PatternEntryAltitude INT,
 	DateAdded DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	IsDeleted BIT NOT NULL DEFAULT 0
 );
@@ -135,6 +137,7 @@ DROP TABLE Invitation
 DROP TABLE [User]
 DROP TABLE UserRole
 DROP TABLE Waypoint
+DROP TABLE FlightStatistics
 DROP TABLE Flight
 DROP TABLE Aircraft
 

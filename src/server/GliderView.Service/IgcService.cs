@@ -201,6 +201,8 @@ namespace GliderView.Service
                     // We are currently adding the towplane flight
                     await _flightRepo.AssignTow(relatedFlight.FlightId, flight.FlightId);
                 }
+
+                await _flightRepo.UpsertFlightStatistics(flight);
             }
             catch (Exception ex)
             {

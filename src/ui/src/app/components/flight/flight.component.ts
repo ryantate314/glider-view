@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { map, Observable, shareReplay, switchMap } from 'rxjs';
+import { map, merge, Observable, shareReplay, Subject, switchMap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as leaflet from 'leaflet';
@@ -38,10 +38,25 @@ export class FlightComponent implements OnInit, AfterViewInit {
 
   private map: leaflet.Map | null = null;
 
+  private updateStatistics$ = new Subject<void>();
+
   constructor(private flightService: FlightService, private route: ActivatedRoute) {
-    this.flight$ = this.route.params.pipe(
-      map(params => params["id"]),
-      switchMap(id => this.flightService.getFlight(id)),
+
+    const flightId$ = this.route.params.pipe(
+      map(params => params["id"])
+    );
+
+    const updateStatsRequest$ = this.updateStatistics$.pipe(
+      withLatestFrom(flightId$),
+      switchMap(([_, id]) => this.flightService.recalculateStatistics(id))
+    );
+
+    this.flight$ = merge(
+      flightId$,
+      updateStatsRequest$
+    ).pipe(
+      withLatestFrom(flightId$),
+      switchMap(([_, flightId]) => this.flightService.getFlight(flightId)),
       shareReplay(1)
     );
 
@@ -69,9 +84,16 @@ export class FlightComponent implements OnInit, AfterViewInit {
   }
 
   public mToFt(value: number | undefined | null): number | null {
-    return !value ? null : value * 3.281;
+    return !value ? null : Math.round(value * 3.281);
   }
 
+  public kmToM(value: number | undefined | null): number | null {
+    if (value === null || value === undefined)
+      return null;
+
+    return Math.round(this.mToFt(value * 1000)! / 5280 * 10) / 10;    
+  }
+  
   ngAfterViewInit(): void {
     this.flight$.subscribe(flight =>
       this.initMap(flight)
@@ -112,6 +134,10 @@ export class FlightComponent implements OnInit, AfterViewInit {
         
       }
     ).addTo(this.map);
+  }
+
+  public recalculateStatistics() {
+    this.updateStatistics$.next();
   }
 
 }

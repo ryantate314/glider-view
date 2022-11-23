@@ -72,6 +72,13 @@ export class FlightService {
     );
   }
 
+  public recalculateStatistics(flightId: string): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/flights/${flightId}/recalculate-statistics`,
+      null
+    );
+  }
+
   private parseFlight(flight: Flight): Flight {
     return {
       ...flight,

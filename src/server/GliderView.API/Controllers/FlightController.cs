@@ -10,13 +10,16 @@ namespace GliderView.API.Controllers
     {
         private const string INCLUDE_WAYPOINTS = "waypoints";
 
+        [Obsolete]
         private readonly IFlightRepository _flightRepo;
         private readonly IIgcFileRepository _igcRepo;
+        private readonly FlightService _flightService;
 
-        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo)
+        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
+            _flightService = flightService;
         }
 
         [HttpGet]
@@ -37,6 +40,9 @@ namespace GliderView.API.Controllers
 
             Flight? flight = await _flightRepo.GetFlight(flightId);
 
+            if (flight == null)
+                return NotFound();
+
             if (!String.IsNullOrEmpty(includes))
             {
                 var include = includes.Split(",");
@@ -45,9 +51,6 @@ namespace GliderView.API.Controllers
                     flight.Waypoints = await _flightRepo.GetWaypoints(flightId);
                 }
             }
-
-            if (flight == null)
-                return NotFound();
 
             return Ok(flight);
         }
@@ -77,6 +80,14 @@ namespace GliderView.API.Controllers
                 }
                 throw;
             }
+        }
+
+        [HttpPost("{flightId}/recalculate-statistics")]
+        public async Task<IActionResult> RecalculateStatistics([FromRoute] Guid flightId)
+        {
+            await _flightService.RecalculateStatistics(flightId);
+
+            return Ok();
         }
 
         

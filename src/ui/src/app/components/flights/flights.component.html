@@ -30,28 +30,48 @@
 
         <div class="d-flex justify-content-between m-4">
             <h1>Flights <span class="d-md-none">- {{ (date$ | async)?.toDate() | date: 'shortDate' }}</span></h1>
-            <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
-                <mat-icon>add</mat-icon>
-            </button>
+            <div class="flex-right">
+                <button mat-icon-button title="Newest Flights First" (click)="sortDescending()" [disabled]="(sortDirection$ | async) === 'desc'">
+                    <mat-icon>arrow_upward</mat-icon>
+                </button>
+                <button mat-icon-button title="Oldest Flights First" (click)="sortAscending()" [disabled]="(sortDirection$ | async) === 'asc'">
+                    <mat-icon>arrow_downward</mat-icon>
+                </button>
+                <button mat-icon-button title="Reload Flights" (click)="refreshFlights()" [disabled]="isLoading$ | async">
+                    <mat-icon>sync</mat-icon>
+                </button>
+                <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </div>
+            
         </div>
 
         <mat-card *ngFor="let flight of flights" class="mb-4">
             <mat-card-title>
                 <div class="d-flex justify-content-between">
-                    <a [routerLink]="['/flights', flight.flightId]">
-                        <h4>{{flight.aircraft?.description}} - {{flight.startDate | date: 'shortTime'}}</h4>
+                    <a [routerLink]="['/flights', flight.flightId]" class="flight-title" *ngIf="flight.flightId">
+                        <h4>{{flight.aircraft?.description ?? "Unknown Glider"}} - {{flight.startDate | date: 'shortTime'}}</h4>
                     </a>
-                    <button mat-mini-fab color="accent" (click)="downloadIgc(flight)" *ngIf="flight.igcFileName" title="Download IGC File" aria-label="Download IGC File">
-                        <mat-icon>file_download</mat-icon>
+                    <span class="flight-title" *ngIf="!flight.flightId">
+                        <h4>Unknown Glider - {{flight.startDate | date: 'shortTime'}}</h4>
+                    </span>
+                    <button mat-icon-button [matMenuTriggerFor]="menu">
+                        <mat-icon>more_vert</mat-icon>
                     </button>
-                    <button mat-mini-fab color="accent" (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">
-                        <mat-icon>file_upload</mat-icon>
-                    </button>
+                    <mat-menu #menu="matMenu">
+                        <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+                        <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
+                    </mat-menu>
+                </div>
+                <div  *ngIf="flight.towFlight">
+                    <a mat-stroked-button [routerLink]="['/flights', flight.towFlight.flightId]" title="Tow Flight">{{ flight.towFlight.aircraft?.description ?? "Unknown Aircraft" }}</a>
                 </div>
             </mat-card-title>
             <mat-card-content>
-                <span>Duration: {{ formatDuration(flight.duration) }}</span>
-                <span class="ms-3">Release Height: {{ mToFt(flight.statistics?.releaseHeight) ?? "Unknown" }}</span>
+                
+                <span>Duration: {{ flight.duration != null ? formatDuration(flight.duration) : "Unknown" }}</span>
+                <span class="ms-3">Release Height: {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft" : "Unknown" }}</span>
             </mat-card-content>
         </mat-card>
         <p class="text-center" *ngIf="flights.length == 0">No flights on this date.</p>

@@ -8,9 +8,10 @@ namespace GliderView.Service.Models
 {
     public class FlightStatistics
     {
-        public int? ReleaseHeightMeters { get; set; }
-        public int? MaxAltitudeMeters { get; set; }
-        public int? AltitudeGainedMeters { get; set; }
-        public float? DistanceTraveledKm { get; set; }
+        public int? ReleaseHeight { get; set; }
+        public int? MaxAltitude { get; set; }
+        public int? AltitudeGained { get; set; }
+        public float? DistanceTraveled { get; set; }
+        public int? PatternEntryAltitude { get; set; }
     }
 }
