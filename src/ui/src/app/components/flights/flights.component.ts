@@ -90,7 +90,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       flightsOnDate$,
       this.sortDirection$
     ]).pipe(
-      tap(([flights, direction]) => console.log("Rendering flights", direction)),
       // Sort flights
       map(([flights, sortDirection]) =>
         flights.sort((a, b) => sortDirection === 'asc'
@@ -133,8 +132,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     this.sortDirection$.next(
       this.settings.flightSortOrder
     );
-
-    this.sortDirection$.subscribe(dir => console.log("Sort direction:", dir));
   }
 
   private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
@@ -251,7 +248,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   public sortDescending() {
-    console.log("sortDescending()");
     this.settings.flightSortOrder = 'desc';
     this.sortDirection$.next('desc');
   }

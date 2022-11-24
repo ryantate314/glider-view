@@ -22,6 +22,12 @@ export interface Waypoint {
     gpsAltitude: number;
     latitude: number;
     longitude: number;
+    flightEvent: FlightEventType | null;
+}
+
+export enum FlightEventType {
+    release = 1,
+    patternEntry = 2
 }
 
 export interface Statistics {

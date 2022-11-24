@@ -31,9 +31,9 @@
             </div>
         </div>
         <div class="col-xl-6">
-            <canvas baseChart *ngIf="altitudeChartData$ | async as altitudeChartData"
-                [data]="altitudeChartData"
-                [options]="altitudeChartOptions"
+            <canvas baseChart *ngIf="chartConfig$ | async as chartConfig"
+                [data]="chartConfig.data"
+                [options]="chartConfig.options"
                 [type]="'line'">
             </canvas>
         </div>

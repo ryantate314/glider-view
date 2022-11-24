@@ -156,10 +156,12 @@ WHERE F.StartDate >= @startDate
         {
             const string sql = @"
 SELECT
-    W.[Date] AS [Time]
+      W.WaypointId
+    , W.[Date] AS [Time]
     , W.Latitude
     , W.Longitude
     , W.GpsAltitudeMeters AS GpsAltitude
+    , W.FlightEvent
 FROM Flight F
     JOIN Waypoint W
         ON F.FlightId = W.FlightId
@@ -282,6 +284,7 @@ SELECT
     , W.Longitude
     , W.GpsAltitudeMeters
     , W.[Date]
+    , W.FlightEvent
 FROM @waypoints W
 ";
             var args = new
@@ -449,6 +452,51 @@ SELECT @id;
                 };
                 Guid id = await con.ExecuteScalarAsync<Guid>(sql, args);
                 aircraft.AircraftId = id;
+            }
+        }
+
+        public async Task UpdateFlightEvents(Service.Models.Flight flight)
+        {
+            if (flight.Waypoints == null)
+                return;
+
+            const string sql = @"
+BEGIN TRAN
+
+BEGIN TRY
+    UPDATE Waypoint
+        SET FlightEvent = NULL
+    WHERE FlightId = (
+        SELECT
+            FlightId
+        FROM Flight
+        WHERE FlightGuid = @flightId
+            AND IsDeleted = 0
+    );
+
+    UPDATE W
+        SET FlightEvent = NW.FlightEvent
+    FROM Waypoint W
+        JOIN @waypoints NW
+            ON W.WaypointId = NW.WaypointId;
+
+    COMMIT TRAN
+
+END TRY
+BEGIN CATCH
+    ROLLBACK TRAN;
+    THROW;
+END CATCH
+";
+            var args = new
+            {
+                waypoints = flight.Waypoints.Where(x => x.FlightEvent != null)
+                    .AsTableValuedParameter(),
+                flight.FlightId
+            };
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, args);
             }
         }
     }

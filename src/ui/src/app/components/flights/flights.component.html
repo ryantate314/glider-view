@@ -2,7 +2,8 @@
 
     <ng-container *ngIf="flights$ | async as flights; else loading">
 
-        <div class="d-none d-md-block w-xl-70 week-container mt-4">
+        <!-- Week Navigator -->
+        <nav class="d-none d-md-block w-xl-70 week-container mt-4">
             <div class="week-display d-flex justify-content-center align-items-center">
                 <button mat-mini-fab class="me-1" (click)="navigateWeekBack()">
                     <mat-icon>chevron_left</mat-icon>
@@ -26,11 +27,13 @@
                     <mat-icon>chevron_right</mat-icon>
                 </button>
             </div>
-        </div>
+        </nav>
 
-        <div class="d-flex justify-content-between m-4">
+        <!-- Heading -->
+        <div class="d-md-flex m-4">
             <h1>Flights <span class="d-md-none">- {{ (date$ | async)?.toDate() | date: 'shortDate' }}</span></h1>
-            <div class="flex-right">
+            <span class="flex-spacer"></span>
+            <div>
                 <button mat-icon-button title="Newest Flights First" (click)="sortDescending()" [disabled]="(sortDirection$ | async) === 'desc'">
                     <mat-icon>arrow_upward</mat-icon>
                 </button>

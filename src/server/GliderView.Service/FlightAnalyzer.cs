@@ -33,9 +33,17 @@ namespace GliderView.Service
             var waypoints = flight.Waypoints.OrderBy(x => x.Time)
                 .ToList();
 
+            // Reset flight events
+            foreach (var waypoint in waypoints)
+                waypoint.FlightEvent = null;
+
             List<Waypoint> data = SmoothData(waypoints);
 
             Waypoint? release = FindReleasePoint(data);
+            if (release != null)
+                // Find original waypoint because SmoothData() performs a clone
+                waypoints.First(x => x.WaypointId == release.WaypointId)
+                    .FlightEvent = FlightEventType.Release;
 
             var stats = new FlightStatistics()
             {
@@ -52,7 +60,12 @@ namespace GliderView.Service
                 stats.AltitudeGained = FindAltitudeGained(flightAfterRelease);
             }
 
-            stats.PatternEntryAltitude = GetPatternEntry(waypoints)?.GpsAltitude;
+            Waypoint? patternEntry = GetPatternEntry(waypoints);
+            if (patternEntry != null)
+            {
+                patternEntry.FlightEvent = FlightEventType.PatternEntry;
+                stats.PatternEntryAltitude = patternEntry.GpsAltitude;
+            }
 
             return stats;
         }
@@ -119,30 +132,21 @@ namespace GliderView.Service
             if (waypoints.Count < 10)
                 throw new ArgumentException("Not enough waypoints to analyze.");
 
-            Waypoint lastWaypoint = waypoints[0];
-            Waypoint? suspectedRelease = null;
-            for (int i = 1; i < waypoints.Count; i++)
+            const int skip = 3;
+            for (int i = skip - 1; i < waypoints.Count - 3; i++)
             {
-                var waypoint = waypoints[i];
+                var waypoint = waypoints[i + 1];
+                var nextWaypoint = waypoints[i + 2];
+                var thirdWaypoint = waypoints[i + 3];
 
-                if (waypoint.GpsAltitude < lastWaypoint.GpsAltitude)
+                // If we have 2 descending waypoints in a row
+                if (thirdWaypoint.GpsAltitude < nextWaypoint.GpsAltitude && nextWaypoint.GpsAltitude < waypoint.GpsAltitude)
                 {
-                    // If we've found 2 descending points in a row
-                    if (suspectedRelease != null)
-                    {
-                        break;
-                    }
-                    suspectedRelease = waypoint;
+                    return waypoints[i];
                 }
-                else
-                {
-                    suspectedRelease = null;
-                }
-
-                lastWaypoint = waypoint;
             }
 
-            return suspectedRelease;
+            return null;
         }
 
         private List<Waypoint> SmoothData(List<Waypoint> waypoints)
@@ -178,6 +182,7 @@ namespace GliderView.Service
 
                 output.Add(new Waypoint()
                 {
+                    WaypointId = waypoint.WaypointId,
                     Time = waypoint.Time,
                     Longitude = waypoint.Longitude,
                     Latitude = waypoint.Latitude,
@@ -217,7 +222,7 @@ namespace GliderView.Service
             double finalBearing = bearingSum / (numFinalWaypoints - 1);
 
             // BASE / DOWNWIND
-            const double bearingThreshold = 10;
+            const double bearingThreshold = 15;
 
             // Back-azimuth of final approach
             int downwindBearing = (int)Math.Round(Math.Abs((finalBearing + 180) % 360));

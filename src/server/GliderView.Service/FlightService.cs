@@ -34,6 +34,8 @@ namespace GliderView.Service
             flight.Statistics = _analyzer.Analyze(flight);
 
             await _repo.UpsertFlightStatistics(flight);
+
+            await _repo.UpdateFlightEvents(flight);
         }
     }
 }

@@ -33,6 +33,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   margin-left: auto;
 }
 
+.flex-spacer {
+  flex: 1 1 auto;
+}
+
 @include media-breakpoint-up(xl) {
   .w-xl-70 {
       width: 70%;
