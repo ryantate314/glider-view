@@ -14,12 +14,9 @@
         }
         public string? IgcFileName { get; set; }
 
-        /// <summary>
-        /// The ID of the corresponding tow plane flight.
-        /// </summary>
-        public Guid? TowFlightId { get; set; }
-
         public IEnumerable<Waypoint>? Waypoints { get; set; }
         public Aircraft? Aircraft { get; set; }
+        public Flight? TowFlight { get; set; }
+        public FlightStatistics? Statistics { get; set; }
     }
 }

@@ -15,5 +15,8 @@ namespace GliderView.Service
         Task<Aircraft?> GetAircraftByTrackerId(string trackerId);
         Task<Flight?> GetFlight(Guid flightId);
         Task<List<Flight>> GetFlights(FlightSearch search);
+        Task<List<Waypoint>> GetWaypoints(Guid flightId);
+        Task UpdateFlightEvents(Flight flight);
+        Task UpsertFlightStatistics(Flight flight);
     }
 }

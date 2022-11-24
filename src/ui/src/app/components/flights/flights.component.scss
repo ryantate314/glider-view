@@ -24,3 +24,19 @@
         }
     }
 }
+
+.flight-title {
+    text-decoration: none;
+}
+
+#navigate-day-back-button {
+    position: fixed;
+    bottom: 1em;
+    left: 1em;
+}
+
+#navigate-day-forward-button {
+    position: fixed;
+    bottom: 1em;
+    right: 1em;
+}

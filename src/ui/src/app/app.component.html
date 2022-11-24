@@ -1,5 +1,19 @@
 <mat-toolbar color="primary">
-    <span>Glider Viewer</span>
+    <a [routerLink]="['/']" class="navbar-brand">
+        <h1>Glider Viewer</h1>
+    </a>
+    <div class="d-none d-sm-block">
+        <a href="/igc-files/" target="_blank" mat-button class="ms-2">IGC File Repository</a>
+    </div>
+
+    <span class="flex-spacer"></span>
+    <button mat-icon-button class="d-sm-none flex-right" [matMenuTriggerFor]="menu">
+        <mat-icon>menu</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+        <a mat-menu-item href="/igc-files/" target="_blank">IGC File Repository</a>
+        <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
+    </mat-menu>
     
 </mat-toolbar>
 <router-outlet></router-outlet>

@@ -14,8 +14,8 @@ namespace GliderView.Service
         {
             public DateTime Time { get; set; }
             public int GpsAltitude { get; set; }
-            public decimal Latitude { get; set; }
-            public decimal Longitude { get; set; }
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
         }
 
         public string GliderType { get; set; }
@@ -107,17 +107,17 @@ namespace GliderView.Service
             return waypoint;
         }
 
-        private static decimal ParseCoordinate(string coordinate)
+        private static double ParseCoordinate(string coordinate)
         {
             int degrees;
-            decimal minutes;
+            double minutes;
             int multiplier = 1;
 
             if (coordinate.Length == 9)
             {
                 // E/W
                 degrees = Int32.Parse(coordinate.Substring(0, 3));
-                minutes = Decimal.Parse(coordinate.Substring(3, 2) + "." + coordinate.Substring(5, 3));
+                minutes = Double.Parse(coordinate.Substring(3, 2) + "." + coordinate.Substring(5, 3));
                 if (coordinate[8] == 'W')
                     multiplier = -1;
             }
@@ -125,7 +125,7 @@ namespace GliderView.Service
             {
                 // N/S
                 degrees = Int32.Parse(coordinate.Substring(0, 2));
-                minutes = Decimal.Parse(coordinate.Substring(2, 2) + "." + coordinate.Substring(4, 3));
+                minutes = Double.Parse(coordinate.Substring(2, 2) + "." + coordinate.Substring(4, 3));
                 if (coordinate[7] == 'S')
                     multiplier = -1;
             }

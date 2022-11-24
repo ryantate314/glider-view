@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, of, share, shareReplay, switchMap, tap, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, tap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -8,6 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
 import * as moment from 'moment';
+import { SettingsService } from 'src/app/services/settings.service';
 
 interface WeekDay {
   abbreviation: string;
@@ -30,11 +31,15 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public weekDays$: Observable<WeekDay[]>;
   public isLoading$ = new BehaviorSubject<boolean>(true);
 
+  private refreshFlights$ = new Subject();
+  public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
+
   constructor(
     private flightService: FlightService,
     private route: ActivatedRoute,
     private dialog: MatDialog,
-    private router: Router
+    private router: Router,
+    private settings: SettingsService
   ) {
     this.date$ = this.route.params.pipe(
       map(params => {
@@ -47,21 +52,24 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     );
 
     const week$ = this.date$.pipe(
-      map(date => date.clone().startOf('week')),
+      map(date => date.clone().startOf('isoWeek')),
       distinctUntilChanged((prev, curr) => prev.isSame(curr, 'day')),
       // Without share, each subscription gets their own observable pipeline
       shareReplay(1)
     );
 
-    this.allFlights$ = week$.pipe(
+    this.allFlights$ = combineLatest([
+      week$,
+      this.refreshFlights$.pipe(startWith(null))
+    ]).pipe(
       tap(_ => {
         this.isLoading$.next(true);
       }),
-      switchMap(date =>
+      switchMap(([date, _]) =>
         this.flightService.getFlights(
           date.toDate(),
           date.clone()
-            .endOf('week')
+            .endOf('isoWeek')
             .toDate())
       ),
       tap(_ => {
@@ -70,15 +78,47 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       shareReplay(1)
     );
 
-    this.flights$ = combineLatest([
+    const flightsOnDate$ = this.flights$ = combineLatest([
       this.allFlights$,
       this.date$
     ]).pipe(
       map(([flights, date]) => flights.filter(x =>
-        moment(date).isSame(x.startDate, 'day'))),
-      // Order by start date ascending
+        moment(date).isSame(x.startDate, 'day')))
+    );
+
+    this.flights$ = combineLatest([
+      flightsOnDate$,
+      this.sortDirection$
+    ]).pipe(
+      // Sort flights
+      map(([flights, sortDirection]) =>
+        flights.sort((a, b) => sortDirection === 'asc'
+          ? a.startDate.getTime() - b.startDate.getTime()
+          : b.startDate.getTime() - a.startDate.getTime())
+      ),
       map(flights => {
-        return flights.sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+        // The API returns a flat list of glider flights and tows. Convert them into a list of glider flights with
+        // linked tow flights.
+        return flights.map<Flight>(flight => flight.aircraft?.isGlider
+          ? flight
+          : {
+            flightId: null,
+            aircraft: null,
+            duration: null,
+            startDate: flight.startDate,
+            endDate: null,
+            igcFileName: null,
+            statistics: {
+              releaseHeight: flight.statistics?.maxAltitude ?? null,
+              altitudeGained: null,
+              distanceTraveled: null,
+              maxAltitude: null,
+              patternEntryAltitude: null
+            },
+            towFlight: flight,
+            waypoints: null
+          }
+        );
       })
     );
 
@@ -88,12 +128,16 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     ]).pipe(
       map(([flights, date]) => this.groupFlightsIntoDays(date, flights))
     );
+
+    this.sortDirection$.next(
+      this.settings.flightSortOrder
+    );
   }
 
   private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
 
     const days = [];
-    const dateIterator = date.clone().startOf('week');
+    const dateIterator = date.clone().startOf('isoWeek');
 
     for (let i = 0; i < 7; i++) {
 
@@ -121,8 +165,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   }
 
+  refreshFlights() {
+    this.refreshFlights$.next(null);
+  }
+
   public downloadIgc(flight: Flight) {
-    this.flightService.downloadIgcFile(flight.flightId).subscribe({
+    this.flightService.downloadIgcFile(flight.flightId!).subscribe({
       next: (file) => {
         FileSaver.saveAs(file);
       },
@@ -155,7 +203,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     ).subscribe(([_, date]) =>
       this.navigateToDate(
         date.clone()
-          .startOf('week')
+          .startOf('isoWeek')
           .subtract(1, 'day'))
     );
   }
@@ -167,8 +215,28 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     ).subscribe(([_, date]) =>
       this.navigateToDate(
         date.clone()
-          .endOf('week')
+          .endOf('isoWeek')
           .add(1, 'day'))
+    );
+  }
+
+  public navigateDayForward() {
+    of(true).pipe(
+      withLatestFrom(this.date$)
+    ).subscribe(([_, date]) =>
+      this.navigateToDate(
+        date.clone()
+          .add(1, 'day'))
+    );
+  }
+
+  public navigateDayBackward() {
+    of(true).pipe(
+      withLatestFrom(this.date$)
+    ).subscribe(([_, date]) =>
+      this.navigateToDate(
+        date.clone()
+          .subtract(1, 'day'))
     );
   }
 
@@ -177,5 +245,21 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       '/flights/dashboard',
       date.format('YYYY-MM-DD')
     ]);
+  }
+
+  public sortDescending() {
+    this.settings.flightSortOrder = 'desc';
+    this.sortDirection$.next('desc');
+  }
+
+  public sortAscending() {
+    this.settings.flightSortOrder = 'asc';
+    this.sortDirection$.next('asc');
+  }
+
+  public mToFt(value: number | undefined | null): number | null {
+    return !value
+      ? null
+      : Math.round(value! * 3.281);
   }
 }

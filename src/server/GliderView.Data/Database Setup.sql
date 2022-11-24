@@ -52,7 +52,8 @@ CREATE TABLE Waypoint (
 	Latitude DECIMAL(6,4) NOT NULL,
 	Longitude DECIMAL(7,4) NOT NULL,
 	GpsAltitudeMeters SMALLINT,
-	[Date] DATETIME NOT NULL
+	[Date] DATETIME NOT NULL,
+	FlightEvent TINYINT FOREIGN KEY REFERENCES FlightEventType (FlightEventTypeId)
 )
 
 
@@ -97,18 +98,45 @@ CREATE TABLE Invitation (
 
 CREATE TABLE Occupant (
 	OccupantId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
-	FlightId INT NOT NULL FOREIGN KEY REFERENCES FLIGHT (FlightId),
+	FlightId INT NOT NULL FOREIGN KEY REFERENCES Flight (FlightId),
 	UserId INT FOREIGN KEY REFERENCES [User] (UserId),
 	Name VARCHAR(100)
 )
 
+CREATE TABLE FlightStatistics (
+	FlightStatisticsId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
+	FlightId INT NOT NULL FOREIGN KEY REFERENCES Flight (FLightId),
+	ReleaseHeight INT,
+	AltitudeGained INT,
+	DistanceTraveled FLOAT,
+	MaxAltitude INT,
+	PatternEntryAltitude INT,
+	DateAdded DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	IsDeleted BIT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE FlightEventType (
+	FlightEventTypeId TINYINT NOT NULL PRIMARY KEY,
+	[Description] VARCHAR(32)
+)
+
+INSERT INTO FlightEventType (
+	FlightEventTypeId
+	, [Description]
+)
+VALUES
+  ( 1, 'Release' )
+, ( 2, 'Pattern Entry' )
+
 GO
 
 CREATE TYPE Waypoint AS TABLE (
+	WaypointId INT,
 	Latitude DECIMAL(6,4) NOT NULL,
 	Longitude DECIMAL(7,4) NOT NULL,
 	GpsAltitudeMeters SMALLINT,
-	[Date] DATETIME NOT NULL
+	[Date] DATETIME NOT NULL,
+	FlightEvent TINYINT
 );
 
 GO
@@ -125,8 +153,10 @@ DROP TABLE Invitation
 DROP TABLE [User]
 DROP TABLE UserRole
 DROP TABLE Waypoint
+DROP TABLE FlightStatistics
 DROP TABLE Flight
 DROP TABLE Aircraft
+DROP TABLE FlightEventType
 
 DROP TYPE Waypoint
 

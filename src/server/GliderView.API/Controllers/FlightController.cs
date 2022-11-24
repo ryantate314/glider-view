@@ -8,13 +8,18 @@ namespace GliderView.API.Controllers
     [Route("flights")]
     public class FlightController : Controller
     {
-        private readonly IFlightRepository _flightRepo;
-        private readonly IgcFileRepository _igcRepo;
+        private const string INCLUDE_WAYPOINTS = "waypoints";
 
-        public FlightController(IFlightRepository flightRepo, IgcFileRepository igcRepo)
+        [Obsolete]
+        private readonly IFlightRepository _flightRepo;
+        private readonly IIgcFileRepository _igcRepo;
+        private readonly FlightService _flightService;
+
+        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
+            _flightService = flightService;
         }
 
         [HttpGet]
@@ -28,7 +33,7 @@ namespace GliderView.API.Controllers
         }
 
         [HttpGet("{flightId}")]
-        public async Task<IActionResult> GetById([FromRoute] Guid flightId)
+        public async Task<IActionResult> GetById([FromRoute] Guid flightId, [FromQuery] string includes)
         {
             if (flightId == Guid.Empty)
                 return BadRequest("Flight ID cannot be empty.");
@@ -37,6 +42,15 @@ namespace GliderView.API.Controllers
 
             if (flight == null)
                 return NotFound();
+
+            if (!String.IsNullOrEmpty(includes))
+            {
+                var include = includes.Split(",");
+                if (include.Contains(INCLUDE_WAYPOINTS, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    flight.Waypoints = await _flightRepo.GetWaypoints(flightId);
+                }
+            }
 
             return Ok(flight);
         }
@@ -66,6 +80,14 @@ namespace GliderView.API.Controllers
                 }
                 throw;
             }
+        }
+
+        [HttpPost("{flightId}/recalculate-statistics")]
+        public async Task<IActionResult> RecalculateStatistics([FromRoute] Guid flightId)
+        {
+            await _flightService.RecalculateStatistics(flightId);
+
+            return Ok();
         }
 
         

@@ -39,8 +39,13 @@ SELECT
     , F.StartDate
     , F.EndDate
     , F.IgcFilename
+
     -- The tow plane flight
     , Tow.FlightGuid AS TowFlightId
+    , TowAircraft.AircraftGuid AS TowAircraftId
+    , TowAircraft.Description AS TowAircraftDescription
+    , TowAircraft.Registration AS TowAircraftRegistration
+    , TowAircraft.TrackerId AS TowAircraftTrackerId
 
     , A.AircraftGuid AS AircraftId
     , A.TrackerId
@@ -48,11 +53,23 @@ SELECT
     , A.Registration AS AircraftRegistration
     , A.NumSeats
     , A.IsGlider
+
+    -- Flight Statistics
+    , FS.MaxAltitude
+    , FS.ReleaseHeight
+    , FS.AltitudeGained
+    , FS.DistanceTraveled
+    , FS.PatternEntryAltitude
 FROM dbo.Flight F
     LEFT JOIN dbo.Aircraft A
         ON F.AircraftId = A.AircraftId
     LEFT JOIN dbo.Flight Tow
         ON F.TowId = Tow.FlightId
+    LEFT JOIN dbo.Aircraft TowAircraft
+        ON Tow.AircraftId = TowAircraft.AircraftId
+    LEFT JOIN dbo.FlightStatistics FS
+        ON F.FlightId = FS.FlightId
+            AND FS.IsDeleted = 0
 WHERE F.FlightGuid = @flightId
     AND F.IsDeleted = 0
 ";
@@ -75,8 +92,13 @@ SELECT
     , F.StartDate
     , F.EndDate
     , F.IgcFilename
+
     -- The tow plane flight
     , Tow.FlightGuid AS TowFlightId
+    , TowAircraft.AircraftGuid AS TowAircraftId
+    , TowAircraft.Description AS TowAircraftDescription
+    , TowAircraft.Registration AS TowAircraftRegistration
+    , TowAircraft.TrackerId AS TowAircraftTrackerId
 
     , A.AircraftGuid AS AircraftId
     , A.TrackerId
@@ -84,11 +106,23 @@ SELECT
     , A.Registration AS AircraftRegistration
     , A.NumSeats
     , A.IsGlider
+
+    -- Flight Statistics
+    , FS.MaxAltitude
+    , FS.ReleaseHeight
+    , FS.AltitudeGained
+    , FS.DistanceTraveled
+    , FS.PatternEntryAltitude
 FROM dbo.Flight F
     LEFT JOIN dbo.Aircraft A
         ON F.AircraftId = A.AircraftId
     LEFT JOIN dbo.Flight Tow
         ON F.TowId = Tow.FlightId
+    LEFT JOIN dbo.Aircraft TowAircraft
+        ON Tow.AircraftId = TowAircraft.AircraftId
+    LEFT JOIN dbo.FlightStatistics FS
+        ON F.FlightId = FS.FlightId
+            AND FS.IsDeleted = 0
 WHERE F.StartDate >= @startDate
     AND F.StartDate <= @endDate
     AND (@aircraftId IS NULL OR A.AircraftGuid = @aircraftId)
@@ -114,6 +148,29 @@ WHERE F.StartDate >= @startDate
                 };
                 return (await con.QueryAsync<Data.Models.Flight>(sql, args))
                     .Select(flight => ConvertDataToService(flight)!)
+                    .ToList();
+            }
+        }
+
+        public async Task<List<Waypoint>> GetWaypoints(Guid flightId)
+        {
+            const string sql = @"
+SELECT
+      W.WaypointId
+    , W.[Date] AS [Time]
+    , W.Latitude
+    , W.Longitude
+    , W.GpsAltitudeMeters AS GpsAltitude
+    , W.FlightEvent
+FROM Flight F
+    JOIN Waypoint W
+        ON F.FlightId = W.FlightId
+WHERE F.FlightGuid = @flightId
+    AND F.IsDeleted = 0;
+";
+            using (var con = new SqlConnection(_connectionString))
+            {
+                return (await con.QueryAsync<Waypoint>(sql, new { flightId }))
                     .ToList();
             }
         }
@@ -199,7 +256,7 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                 flight.StartDate,
                 flight.EndDate,
                 flight.Aircraft?.AircraftId,
-                flight.TowFlightId,
+                TowFlightId = flight.TowFlight?.FlightId,
                 flight.IgcFileName
             };
             return tran.Connection.ExecuteScalarAsync<Guid>(sql, flightArgs, tran);
@@ -227,6 +284,7 @@ SELECT
     , W.Longitude
     , W.GpsAltitudeMeters
     , W.[Date]
+    , W.FlightEvent
 FROM @waypoints W
 ";
             var args = new
@@ -235,6 +293,54 @@ FROM @waypoints W
                 waypoints = flight.Waypoints!.AsTableValuedParameter()
             };
             return tran.Connection.ExecuteAsync(sql, args, tran);
+        }
+
+        public async Task UpsertFlightStatistics(Service.Models.Flight flight)
+        {
+            const string sql = @"
+DECLARE @flightId INT = (
+    SELECT F.FlightId
+    FROM Flight F
+    WHERE F.FlightGuid = @flightGuid
+        AND F.IsDeleted = 0
+);
+
+IF @flightId IS NULL
+    THROW 51000, 'Flight does not exist.', 1;
+
+UPDATE FlightStatistics
+    SET IsDeleted = 1
+WHERE FlightId = @flightId
+    AND IsDeleted = 0;
+
+INSERT INTO FlightStatistics (
+      FlightId
+    , ReleaseHeight
+	, AltitudeGained
+	, DistanceTraveled
+    , MaxAltitude
+    , PatternEntryAltitude
+)
+VALUES (
+      @flightId
+    , @releaseHeight
+    , @altitudeGained
+    , @distanceTraveled
+    , @maxAltitude
+    , @patternEntryAltitude
+)
+";
+            var args = new
+            {
+                FlightGuid = flight.FlightId,
+                ReleaseHeight = flight.Statistics?.ReleaseHeight,
+                MaxAltitude = flight.Statistics?.MaxAltitude,
+                AltitudeGained = flight.Statistics?.AltitudeGained,
+                DistanceTraveled = flight.Statistics?.DistanceTraveled,
+                PatternEntryAltitude = flight.Statistics?.PatternEntryAltitude
+            };
+            using (var con = new SqlConnection(_connectionString))
+                await con.ExecuteAsync(sql, args);
         }
 
         private Service.Models.Flight? ConvertDataToService(Data.Models.Flight flight)
@@ -258,7 +364,30 @@ FROM @waypoints W
                         RegistrationId = flight.AircraftRegistration,
                         TrackerId = flight.TrackerId,
                         IsGlider = flight.IsGlider
-                    }
+                    },
+                TowFlight = flight.TowFlightId == null
+                    ? null
+                    : new Service.Models.Flight()
+                    {
+                        FlightId = flight.TowFlightId.Value,
+                        Aircraft = flight.TowAircraftId == null
+                            ? null
+                            : new Aircraft()
+                            {
+                                AircraftId = flight.TowAircraftId.Value,
+                                Description = flight.TowAircraftDescription,
+                                RegistrationId = flight.TowAircraftRegistration,
+                                TrackerId = flight.TowAircraftTrackerId
+                            }
+                    },
+                Statistics = new FlightStatistics()
+                {
+                    AltitudeGained = flight.AltitudeGained,
+                    DistanceTraveled = flight.DistanceTraveled,
+                    MaxAltitude = flight.MaxAltitude,
+                    ReleaseHeight = flight.ReleaseHeight,
+                    PatternEntryAltitude = flight.PatternEntryAltitude
+                }
             };
         }
 
@@ -323,6 +452,51 @@ SELECT @id;
                 };
                 Guid id = await con.ExecuteScalarAsync<Guid>(sql, args);
                 aircraft.AircraftId = id;
+            }
+        }
+
+        public async Task UpdateFlightEvents(Service.Models.Flight flight)
+        {
+            if (flight.Waypoints == null)
+                return;
+
+            const string sql = @"
+BEGIN TRAN
+
+BEGIN TRY
+    UPDATE Waypoint
+        SET FlightEvent = NULL
+    WHERE FlightId = (
+        SELECT
+            FlightId
+        FROM Flight
+        WHERE FlightGuid = @flightId
+            AND IsDeleted = 0
+    );
+
+    UPDATE W
+        SET FlightEvent = NW.FlightEvent
+    FROM Waypoint W
+        JOIN @waypoints NW
+            ON W.WaypointId = NW.WaypointId;
+
+    COMMIT TRAN
+
+END TRY
+BEGIN CATCH
+    ROLLBACK TRAN;
+    THROW;
+END CATCH
+";
+            var args = new
+            {
+                waypoints = flight.Waypoints.Where(x => x.FlightEvent != null)
+                    .AsTableValuedParameter(),
+                flight.FlightId
+            };
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, args);
             }
         }
     }

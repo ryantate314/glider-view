@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace GliderView.Service
 {
-    public class IgcFileRepository
+    public class IgcFileRepository : IIgcFileRepository
     {
         private readonly string _directory;
         private readonly ILogger<IgcFileRepository> _logger;
