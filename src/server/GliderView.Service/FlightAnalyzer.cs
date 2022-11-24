@@ -148,11 +148,11 @@ namespace GliderView.Service
             }
 
             const int skip = 3;
-            for (int i = skip - 1; i < waypoints.Count - 3; i++)
+            for (int i = skip - 1; i < waypoints.Count - 2; i++)
             {
-                var waypoint = waypoints[i + 1];
-                var nextWaypoint = waypoints[i + 2];
-                var thirdWaypoint = waypoints[i + 3];
+                var waypoint = waypoints[i];
+                var nextWaypoint = waypoints[i + 1];
+                var thirdWaypoint = waypoints[i + 2];
 
                 // If we have 2 descending waypoints in a row
                 if (thirdWaypoint.GpsAltitude < nextWaypoint.GpsAltitude && nextWaypoint.GpsAltitude < waypoint.GpsAltitude)
