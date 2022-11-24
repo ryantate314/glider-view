@@ -66,8 +66,7 @@ namespace GliderView.API
             services.AddTransient<FlightAnalyzer>();
             services.AddTransient<IgcService>();
             services.AddTransient<FlightService>();
-            
-            
+            services.AddSingleton<IFlightAnalyzer, FlightAnalyzer>();
 
             Data.Configuration.RegisterServices(services, config);
 

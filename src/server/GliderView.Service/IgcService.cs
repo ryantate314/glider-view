@@ -18,7 +18,7 @@ namespace GliderView.Service
         private readonly ILogger _logger;
         private readonly IFaaDatabaseProvider _faaProvider;
         private readonly IFlightBookClient _flightBookClient;
-        private readonly FlightAnalyzer _flightAnalyzer;
+        private readonly IFlightAnalyzer _flightAnalyzer;
 
         /// <summary>
         /// seconds
@@ -33,7 +33,7 @@ namespace GliderView.Service
         }
 
 
-        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IFaaDatabaseProvider faaProvider, IFlightBookClient flightBookClient)
+        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IFaaDatabaseProvider faaProvider, IFlightBookClient flightBookClient, IFlightAnalyzer flightAnalyzer)
         {
             _fileRepo = fileRepo;
             _flightRepo = flightRepo;
@@ -41,7 +41,7 @@ namespace GliderView.Service
             _faaProvider = faaProvider;
             _flightBookClient = flightBookClient;
 
-            _flightAnalyzer = new FlightAnalyzer();
+            _flightAnalyzer = flightAnalyzer;
         }
 
         public async Task DownloadAndProcess(string airfield, string trackerId)
@@ -180,7 +180,14 @@ namespace GliderView.Service
                 throw new FlightAlreadyExistsException(trackerId, flight.StartDate);
             }
 
-            flight.Statistics = _flightAnalyzer.Analyze(flight);
+            try
+            {
+                flight.Statistics = _flightAnalyzer.Analyze(flight);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to analyze flight");
+            }
 
             try
             {

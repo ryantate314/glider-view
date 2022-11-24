@@ -13,6 +13,7 @@ namespace GliderView.UnitTests
         private Mock<ILogger<IgcService>> _mockLogger;
         private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
         private Mock<IFlightBookClient> _mockFlightBookClient;
+        private Mock<IFlightAnalyzer> _mockFlightAnalyzer;
 
         [SetUp]
         public void Setup()
@@ -22,13 +23,15 @@ namespace GliderView.UnitTests
             _mockLogger = new Mock<ILogger<IgcService>>();
             _mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
             _mockFlightBookClient= new Mock<IFlightBookClient>();
+            _mockFlightAnalyzer = new Mock<IFlightAnalyzer>();
 
             _service = new IgcService(
                 _mockFileRepository.Object,
                 _mockFlightRepository.Object,
                 _mockLogger.Object,
                 _mockFaaDatabaseProvider.Object,
-                _mockFlightBookClient.Object
+                _mockFlightBookClient.Object,
+                _mockFlightAnalyzer.Object
             );
         }
 

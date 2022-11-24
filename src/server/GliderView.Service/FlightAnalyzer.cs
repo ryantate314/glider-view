@@ -1,5 +1,6 @@
 ﻿using GeoLibrary.Model;
 using GliderView.Service.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +9,17 @@ using System.Threading.Tasks;
 
 namespace GliderView.Service
 {
-    public class FlightAnalyzer
+    public interface IFlightAnalyzer
     {
+        FlightStatistics Analyze(Flight flight);
+    }
+
+    public class FlightAnalyzer : IFlightAnalyzer
+    {
+        public FlightAnalyzer(ILogger<FlightAnalyzer> logger)
+        {
+            _logger = logger;
+        }
 
         private readonly static Polygon Pattern = new Polygon(new Point[]
         {
@@ -24,7 +34,8 @@ namespace GliderView.Service
             // NE - Repeat first point to close polygon
             new Point(-84.573683, 35.226593)
         });
-        
+        private readonly ILogger<FlightAnalyzer> _logger;
+
         public FlightStatistics Analyze(Flight flight)
         {
             if (flight.Waypoints == null)
@@ -37,7 +48,8 @@ namespace GliderView.Service
             foreach (var waypoint in waypoints)
                 waypoint.FlightEvent = null;
 
-            List<Waypoint> data = SmoothData(waypoints);
+            // Disable smoothing temporarily
+            List<Waypoint> data = waypoints; // SmoothData(waypoints);
 
             Waypoint? release = FindReleasePoint(data);
             if (release != null)
@@ -130,7 +142,10 @@ namespace GliderView.Service
         private Waypoint? FindReleasePoint(List<Waypoint> waypoints)
         {
             if (waypoints.Count < 10)
-                throw new ArgumentException("Not enough waypoints to analyze.");
+            {
+                _logger.LogWarning("Unable to find release point due to not enough waypoints.");
+                return null;
+            }
 
             const int skip = 3;
             for (int i = skip - 1; i < waypoints.Count - 3; i++)
@@ -198,7 +213,10 @@ namespace GliderView.Service
             // Work backwards from landing
 
             if (waypoints.Count < 10)
+            {
+                _logger.LogWarning("Unable to calculate pattern entry due to not enough waypoints.");
                 return null;
+            }
 
             var reverseWaypoints = waypoints.Reverse<Waypoint>()
                 .ToList();
