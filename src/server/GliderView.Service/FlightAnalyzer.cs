@@ -13,10 +13,16 @@ namespace GliderView.Service
 
         private readonly static Polygon Pattern = new Polygon(new Point[]
         {
+            // NE
             new Point(-84.573683, 35.226593),
+            // NW
             new Point(-84.591593, 35.235328),
+            // SW
+            new Point(-84.596894, 35.227574),
+            // SE
             new Point(-84.579051, 35.219070),
-            new Point(-84.596894, 35.227574)
+            // NE - Repeat first point to close polygon
+            new Point(-84.573683, 35.226593)
         });
         
         public FlightStatistics Analyze(Flight flight)
@@ -186,12 +192,56 @@ namespace GliderView.Service
         {
             // Work backwards from landing
 
-            foreach (var waypoint in waypoints.Reverse<Waypoint>())
+            if (waypoints.Count < 10)
+                return null;
+
+            var reverseWaypoints = waypoints.Reverse<Waypoint>()
+                .ToList();
+
+            // FINAL
+            // Get avearage bearing for last few waypoints
+            // Skip waypoints used to clear the runway
+            const int skipWaypoints = 3;
+            const int numFinalWaypoints = 3;
+            double bearingSum = 0;
+            for (int i = skipWaypoints + 1; i < skipWaypoints + numFinalWaypoints; i++)
             {
-                if (!Pattern.IsPointInside(new Point(waypoint.Longitude, waypoint.Latitude)))
+                bearingSum += GetBearing(
+                    // Swap the direction since we are moving backwards through the waypoints
+                    reverseWaypoints[i].Latitude,
+                    reverseWaypoints[i].Longitude,
+                    reverseWaypoints[i - 1].Latitude,
+                    reverseWaypoints[i - 1].Longitude
+                );
+            }
+            double finalBearing = bearingSum / (numFinalWaypoints - 1);
+
+            // BASE / DOWNWIND
+            const double bearingThreshold = 10;
+
+            // Back-azimuth of final approach
+            int downwindBearing = (int)Math.Round(Math.Abs((finalBearing + 180) % 360));
+
+            bool downwindEstablished = false;
+            for (int i = numFinalWaypoints + 1; i < waypoints.Count; i++)
+            {
+                double bearing = GetBearing(
+                    // Swap the direction since we are moving backwards through the waypoints
+                    reverseWaypoints[i].Latitude,
+                    reverseWaypoints[i].Longitude,
+                    reverseWaypoints[i - 1].Latitude,
+                    reverseWaypoints[i - 1].Longitude
+                );
+
+                if (!downwindEstablished && Math.Abs(bearing - downwindBearing) < bearingThreshold)
                 {
-                    return waypoint;
+                    downwindEstablished |= true;
+                    i += 3; // Skip a few waypoints to get established on downwind
                 }
+                else if (downwindEstablished && Math.Abs(bearing - downwindBearing) > bearingThreshold)
+                    return reverseWaypoints[i - 1];
+                else if (downwindEstablished && !Pattern.IsPointInside(new Point(reverseWaypoints[i].Longitude, reverseWaypoints[i].Latitude)))
+                    return reverseWaypoints[i - 1];
             }
 
             return null;
@@ -201,13 +251,22 @@ namespace GliderView.Service
         {
             double length = GetDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
 
-            double x = Math.Cos(lat2) * Math.Sin(length);
-            //cos θa * sin θb – sin θa * cos θb * cos ∆L
-            double y = Math.Cos(lat1) * Math.Sin(lat2) - Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(length);
+            //double x = Math.Cos(Deg2Rad(lat2)) * Math.Sin(length);
+            ////cos θa * sin θb – sin θa * cos θb * cos ∆L
+            //double y = Math.Cos(Deg2Rad(lat1)) * Math.Sin(Deg2Rad(lat2)) - Math.Sin(Deg2Rad(lat1)) * Math.Cos(Deg2Rad(lat2)) * Math.Cos(length);
+
+            double x = Math.Sin(Deg2Rad(lon2 - lon1)) * Math.Cos(Deg2Rad(lat2));
+            double y = Math.Cos(Deg2Rad(lat1)) * Math.Sin(Deg2Rad(lat2))
+                - Math.Sin(Deg2Rad(lat1)) * Math.Cos(Deg2Rad(lat2)) * Math.Cos(Deg2Rad(lon2 - lon1));
 
             double bearingRad = Math.Atan2(x, y);
 
-            return Rad2Deg(bearingRad);
+            double degrees = Rad2Deg(bearingRad);
+
+            if (degrees < 0)
+                degrees += 360;
+
+            return degrees;
         }
     }
 }
