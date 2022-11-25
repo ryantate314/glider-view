@@ -60,7 +60,7 @@ namespace GliderView.Service
 
         public async Task ReadAndProcess(string airfield, string fileName)
         {
-            string? trackerId = GetTrackerFromFilename(fileName);
+            string? trackerId = GetTrackerFromFilename(Path.GetFileName(fileName));
             if (trackerId == null)
                 throw new ArgumentException("File name is not in the proper format.");
 

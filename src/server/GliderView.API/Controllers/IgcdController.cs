@@ -102,6 +102,7 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
+        [AutomaticRetry(Attempts = 2)]
         [NonAction]
         public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
         {
