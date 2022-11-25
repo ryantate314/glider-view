@@ -272,6 +272,7 @@ INSERT INTO dbo.Waypoint (
     , Longitude
     , GpsAltitudeMeters
     , [Date]
+    , FlightEvent
 )
 SELECT
     (
