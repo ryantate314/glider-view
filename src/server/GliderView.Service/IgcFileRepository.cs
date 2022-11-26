@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,64 +12,76 @@ namespace GliderView.Service
     {
         private readonly string _directory;
         private readonly ILogger<IgcFileRepository> _logger;
+        private readonly IFileSystem _fileSystem;
 
-        public IgcFileRepository(string directory, ILogger<IgcFileRepository> logger)
+        public IgcFileRepository(string directory, ILogger<IgcFileRepository> logger, System.IO.Abstractions.IFileSystem fileSystem)
         {
             _directory = directory;
             _logger = logger;
+            _fileSystem = fileSystem;
         }
 
         public Stream GetFile(string filename)
         {
-            string fullPath = Path.Combine(_directory, filename);
+            if (filename.StartsWith(_fileSystem.Path.DirectorySeparatorChar))
+                filename = filename.Substring(1, filename.Length - 1);
+
+            string fullPath = _fileSystem.Path.Combine(_directory, filename);
 
             _logger.LogDebug("Attemping to read IGC file {0}", fullPath);
 
-            return File.OpenRead(fullPath);
+            return _fileSystem.File.OpenRead(fullPath);
         }
 
         public IEnumerable<string> GetFiles(string airfield, string trackerId, DateTime date)
         {
-            string path = Path.Combine(
+            string path = _fileSystem.Path.Combine(
                 _directory,
                 GeneratePath(airfield, date)
             );
 
-            if (!Directory.Exists(path))
+            if (!_fileSystem.Directory.Exists(path))
                 return new string[] { };
 
-            return Directory.EnumerateFiles(path, $"*.{trackerId}*.igc")
-                .Select(path => Path.GetRelativePath(_directory, path));
+            return _fileSystem.Directory.EnumerateFiles(path, $"*.{trackerId}*.igc")
+                .Select(path => _fileSystem.Path.GetRelativePath(_directory, path));
         }
 
         public async Task<string> SaveFile(Stream igcFile, string airfield, string registration, string trackerId, DateTime eventDate)
         {
-            string directory = Path.Combine(
+            string path = GeneratePath(airfield, eventDate);
+
+            string absoluteDirectoryPath = _fileSystem.Path.Combine(
                 _directory,
-                GeneratePath(airfield, eventDate)
+                path
             );
 
-            string fullPath = Path.Combine(
-                directory,
-                GenerateFileName(airfield, registration, trackerId, eventDate)
+            _fileSystem.Directory.CreateDirectory(absoluteDirectoryPath);
+
+            string relativePath = _fileSystem.Path.Combine(
+               path,
+               GenerateFileName(airfield, registration, trackerId, eventDate)
             );
 
-            Directory.CreateDirectory(directory);
+            string fullPath = _fileSystem.Path.Combine(
+                _directory,
+                relativePath
+            );
 
             _logger.LogDebug("Saving IGC file to {0}", fullPath);
 
-            using (var fileStream = File.OpenWrite(fullPath))
+            using (var fileStream = _fileSystem.File.OpenWrite(fullPath))
             {
                 igcFile.Seek(0, SeekOrigin.Begin);
                 await igcFile.CopyToAsync(fileStream);
             }
 
-            return fullPath;
+            return relativePath;
         }
 
         private string GeneratePath(string airfield, DateTime eventDate)
         {
-            return Path.Combine(
+            return _fileSystem.Path.Combine(
                 eventDate.Year.ToString(),
                 String.Format("{0:D2}", eventDate.Month),
                 String.Format("{0:D2}", eventDate.Day),

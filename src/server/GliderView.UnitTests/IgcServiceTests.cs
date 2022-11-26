@@ -2,35 +2,56 @@ using GliderView.Service;
 using GliderView.Service.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 
 namespace GliderView.UnitTests
 {
     public class IgcServiceTests
     {
         private IgcService _service;
-        private Mock<IIgcFileRepository> _mockFileRepository;
         private Mock<IFlightRepository> _mockFlightRepository;
         private Mock<ILogger<IgcService>> _mockLogger;
         private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
         private Mock<IFlightBookClient> _mockFlightBookClient;
 
+        private MockFileSystem _fileSystem;
+
+        const string directory = @"\igc-files";
+
         [SetUp]
         public void Setup()
         {
-            _mockFileRepository = new Mock<IIgcFileRepository>();
             _mockFlightRepository= new Mock<IFlightRepository>();
             _mockLogger = new Mock<ILogger<IgcService>>();
             _mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
             _mockFlightBookClient= new Mock<IFlightBookClient>();
 
+            _fileSystem = new MockFileSystem();
+
             _service = new IgcService(
-                _mockFileRepository.Object,
+                new IgcFileRepository(directory, new Mock<ILogger<IgcFileRepository>>().Object, _fileSystem),
                 _mockFlightRepository.Object,
                 _mockLogger.Object,
                 _mockFaaDatabaseProvider.Object,
                 _mockFlightBookClient.Object,
                 new FlightAnalyzer(new Mock<ILogger<FlightAnalyzer>>().Object)
             );
+        }
+
+        private void AddFile1ToFileSystem()
+        {
+            _fileSystem.AddFile(
+                _fileSystem.Path.Combine(
+                    directory,
+                    "2022",
+                    "11",
+                    "13",
+                    "92A",
+                    FILE_1_FILENAME
+                ),
+                new MockFileData(FILE_1)
+             );
         }
 
         [Test]
@@ -70,9 +91,6 @@ namespace GliderView.UnitTests
                     generatedFlight = flight;
                 });
 
-            _mockFileRepository.Setup(x => x.SaveFile(It.IsAny<Stream>(), airfield, FILE_1_REGISTRATION, tracker, FILE_1_EVENTDATE))
-                .ReturnsAsync(() => FILE_1_FILENAME);
-
             // Execute
             await _service.DownloadAndProcess(airfield, tracker);
 
@@ -81,6 +99,11 @@ namespace GliderView.UnitTests
             _mockFlightRepository.Verify(x => x.AddFlight(It.IsAny<Flight>()), Times.Once());
 
             Assert.IsNotEmpty(generatedFlight.Waypoints.Where(x => x.FlightEvent != null));
+
+            Assert.That(
+                generatedFlight.IgcFileName,
+                Is.EqualTo(@"2022\11\13\92A\" + FILE_1_FILENAME)
+            );
         }
 
         [Test]
@@ -93,11 +116,8 @@ namespace GliderView.UnitTests
             Guid aircraftId = Guid.NewGuid();
             Guid flightId = Guid.NewGuid();
 
-            byte[] igcFileBytes = System.Text.Encoding.UTF8.GetBytes(FILE_1);
-
             // Setup
-            _mockFileRepository.Setup(x => x.GetFile(fileName))
-                .Returns(() => new MemoryStream(igcFileBytes));
+            AddFile1ToFileSystem();
 
             // No existing flights
             _mockFlightRepository.Setup(x => x.GetFlights(

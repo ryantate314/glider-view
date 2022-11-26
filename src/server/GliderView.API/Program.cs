@@ -3,6 +3,7 @@ using Hangfire;
 using Hangfire.SqlServer;
 using NLog.Extensions.Logging;
 using NLog.Web;
+using System.IO.Abstractions;
 
 namespace GliderView.API
 {
@@ -57,7 +58,11 @@ namespace GliderView.API
             services.AddHttpClient();
 
             services.AddTransient<IIgcFileRepository>(services =>
-                new IgcFileRepository(config["igcDirectory"]!, services.GetRequiredService<ILogger<IgcFileRepository>>())
+                new IgcFileRepository(
+                    config["igcDirectory"]!,
+                    services.GetRequiredService<ILogger<IgcFileRepository>>(),
+                    new FileSystem()
+                )
             );
             services.AddTransient<IFaaDatabaseProvider, FaaDatabaseProvider>();
             services.AddTransient<IFlightBookClient>(services =>
