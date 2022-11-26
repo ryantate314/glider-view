@@ -97,28 +97,36 @@ export class FlightsComponent implements OnInit, AfterViewInit {
           : b.startDate.getTime() - a.startDate.getTime())
       ),
       map(flights => {
+        // Dictionary of tow flights mapped to their corresponding gliders
+        const towFlights = flights.filter(x => x.towFlight !== null)
+          .reduce((dict, flight) => ({
+            ...dict,
+            [flight.towFlight!.flightId!]: flight
+          }), {});
+
         // The API returns a flat list of glider flights and tows. Convert them into a list of glider flights with
         // linked tow flights.
-        return flights.map<Flight>(flight => flight.aircraft?.isGlider
-          ? flight
-          : {
-            flightId: null,
-            aircraft: null,
-            duration: null,
-            startDate: flight.startDate,
-            endDate: null,
-            igcFileName: null,
-            statistics: {
-              releaseHeight: flight.statistics?.maxAltitude ?? null,
-              altitudeGained: null,
-              distanceTraveled: null,
-              maxAltitude: null,
-              patternEntryAltitude: null
-            },
-            towFlight: flight,
-            waypoints: null
-          }
-        );
+        return flights.filter(flight => !(flight.flightId! in towFlights))
+          .map<Flight>(flight => flight.aircraft?.isGlider
+            ? flight
+            : {
+              flightId: null,
+              aircraft: null,
+              duration: null,
+              startDate: flight.startDate,
+              endDate: null,
+              igcFileName: null,
+              statistics: {
+                releaseHeight: flight.statistics?.maxAltitude ?? null,
+                altitudeGained: null,
+                distanceTraveled: null,
+                maxAltitude: null,
+                patternEntryAltitude: null
+              },
+              towFlight: flight,
+              waypoints: null
+            }
+          );
       })
     );
 
