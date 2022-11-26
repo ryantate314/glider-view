@@ -54,8 +54,9 @@ namespace GliderView.Service
             Waypoint? release = FindReleasePoint(data);
             if (release != null)
                 // Find original waypoint because SmoothData() performs a clone
-                waypoints.First(x => x.WaypointId == release.WaypointId)
-                    .FlightEvent = FlightEventType.Release;
+                //waypoints.First(x => x.WaypointId == release.WaypointId)
+                    //.FlightEvent = FlightEventType.Release;
+                release.FlightEvent = FlightEventType.Release;
 
             var stats = new FlightStatistics()
             {

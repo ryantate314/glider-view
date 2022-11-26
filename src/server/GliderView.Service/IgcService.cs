@@ -82,15 +82,15 @@ namespace GliderView.Service
         private FileNameData? ParseFileName(string filename)
         {
             //2022-11-13_N2750H.C7720C.igc
-            var regex = new Regex(@"^([0-9\-]+)_([A-Za-z0-9])+\.([A-Za-z0-9]+)(_[0-9]+)?\.igc$");
+            var regex = new Regex(@"^([0-9\-]+)_([A-Za-z0-9]+)\.([A-Za-z0-9]+)(_[0-9]+)?\.igc$");
             var match = regex.Match(filename);
             if (!match.Success)
                 return null;
             return new FileNameData()
             {
-                EventDate = DateTime.Parse(match.Groups[0].Value),
-                Registration = match.Groups[1].Value,
-                TrackerId = match.Groups[2].Value
+                EventDate = DateTime.Parse(match.Groups[1].Value),
+                Registration = match.Groups[2].Value,
+                TrackerId = match.Groups[3].Value
             };
         }
 
@@ -170,7 +170,7 @@ namespace GliderView.Service
                     GpsAltitude = waypoint.GpsAltitude,
                     Latitude = waypoint.Latitude,
                     Longitude = waypoint.Longitude
-                })
+                }).ToList()
             };
 
             // See if this flight already exists

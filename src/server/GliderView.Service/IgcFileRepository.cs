@@ -18,7 +18,7 @@ namespace GliderView.Service
             _logger = logger;
         }
 
-        public FileStream GetFile(string filename)
+        public Stream GetFile(string filename)
         {
             string fullPath = Path.Combine(_directory, filename);
 

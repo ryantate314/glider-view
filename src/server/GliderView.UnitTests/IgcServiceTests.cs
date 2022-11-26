@@ -13,7 +13,6 @@ namespace GliderView.UnitTests
         private Mock<ILogger<IgcService>> _mockLogger;
         private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
         private Mock<IFlightBookClient> _mockFlightBookClient;
-        private Mock<IFlightAnalyzer> _mockFlightAnalyzer;
 
         [SetUp]
         public void Setup()
@@ -23,7 +22,6 @@ namespace GliderView.UnitTests
             _mockLogger = new Mock<ILogger<IgcService>>();
             _mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
             _mockFlightBookClient= new Mock<IFlightBookClient>();
-            _mockFlightAnalyzer = new Mock<IFlightAnalyzer>();
 
             _service = new IgcService(
                 _mockFileRepository.Object,
@@ -31,7 +29,7 @@ namespace GliderView.UnitTests
                 _mockLogger.Object,
                 _mockFaaDatabaseProvider.Object,
                 _mockFlightBookClient.Object,
-                _mockFlightAnalyzer.Object
+                new FlightAnalyzer(new Mock<ILogger<FlightAnalyzer>>().Object)
             );
         }
 
@@ -45,6 +43,8 @@ namespace GliderView.UnitTests
             Guid flightId = Guid.NewGuid();
 
             byte[] igcFileBytes = System.Text.Encoding.UTF8.GetBytes(FILE_1);
+
+            Flight? generatedFlight = null;
 
             // Setup
             _mockFlightBookClient.Setup(x => x.DownloadIgcFile(tracker, null, null))
@@ -64,13 +64,59 @@ namespace GliderView.UnitTests
                 .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
 
             _mockFlightRepository.Setup(x => x.AddFlight(It.IsAny<Flight>()))
-                .Callback<Flight>(flight => flight.FlightId = flightId);
+                .Callback<Flight>(flight =>
+                {
+                    flight.FlightId = flightId;
+                    generatedFlight = flight;
+                });
 
             _mockFileRepository.Setup(x => x.SaveFile(It.IsAny<Stream>(), airfield, FILE_1_REGISTRATION, tracker, FILE_1_EVENTDATE))
                 .ReturnsAsync(() => FILE_1_FILENAME);
 
             // Execute
             await _service.DownloadAndProcess(airfield, tracker);
+
+            // Assert
+
+            _mockFlightRepository.Verify(x => x.AddFlight(It.IsAny<Flight>()), Times.Once());
+
+            Assert.IsNotEmpty(generatedFlight.Waypoints.Where(x => x.FlightEvent != null));
+        }
+
+        [Test]
+        public async Task ReadAndProcess_HappyPath()
+        {
+            const string tracker = FILE_1_Tracker;
+            const string airfield = "92A";
+            string fileName = @"\2022\11\13\92A\" + FILE_1_FILENAME;
+
+            Guid aircraftId = Guid.NewGuid();
+            Guid flightId = Guid.NewGuid();
+
+            byte[] igcFileBytes = System.Text.Encoding.UTF8.GetBytes(FILE_1);
+
+            // Setup
+            _mockFileRepository.Setup(x => x.GetFile(fileName))
+                .Returns(() => new MemoryStream(igcFileBytes));
+
+            // No existing flights
+            _mockFlightRepository.Setup(x => x.GetFlights(
+                It.Is<FlightSearch>(search =>
+                    search.StartDate == FILE_1_EVENTDATE
+                        && search.EndDate == FILE_1_EVENTDATE.AddDays(1))
+            )).ReturnsAsync(() => new List<Flight>());
+
+            _mockFlightRepository.Setup(x => x.GetAircraftByTrackerId(tracker))
+                .ReturnsAsync(() => null);
+
+            _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
+                .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
+
+            _mockFlightRepository.Setup(x => x.AddFlight(It.IsAny<Flight>()))
+                .Callback<Flight>(flight => flight.FlightId = flightId);
+
+            // Execute
+            await _service.ReadAndProcess(airfield, fileName);
 
             // Assert
 
