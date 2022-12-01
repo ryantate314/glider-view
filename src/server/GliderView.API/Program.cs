@@ -1,9 +1,16 @@
+using GliderView.Data;
 using GliderView.Service;
+using GliderView.Service.Models;
+using GliderView.Service.Repositories;
 using Hangfire;
 using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using NLog.Extensions.Logging;
 using NLog.Web;
 using System.IO.Abstractions;
+using System.Text;
 
 namespace GliderView.API
 {
@@ -19,7 +26,7 @@ namespace GliderView.API
             ConfigureServices(builder.Services, configuration);
 
             builder.Logging.ClearProviders();
-            
+
             builder.Host.UseNLog();
             NLog.LogManager.Configuration = new NLogLoggingConfiguration(configuration.GetSection("NLog"));
 
@@ -38,12 +45,13 @@ namespace GliderView.API
                 app.UseHangfireDashboard();
             }
 
-            app.UseHttpsRedirection();
+            // Because Docker is behind a Nginx reverse proxy, we don't need SSL
+            //app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-
 
             app.Run();
         }
@@ -72,6 +80,8 @@ namespace GliderView.API
             services.AddTransient<IgcService>();
             services.AddTransient<FlightService>();
             services.AddSingleton<IFlightAnalyzer, FlightAnalyzer>();
+            services.AddTransient<UserService>();
+            services.AddTransient<IPasswordHasher<User>, PasswordHasher<User>>();
 
             Data.Configuration.RegisterServices(services, config);
 
@@ -93,6 +103,39 @@ namespace GliderView.API
             {
                 // Only have 1 worker to prevent concurrency issues
                 options.WorkerCount = 1;
+            });
+
+            // Setup JWT Authentication
+            var jwtSettings = new JwtSettings()
+            {
+                Audience = config["Jwt:Audience"],
+                Issuer = config["Jwt:Issuer"],
+                AuthTokenLifetime = Int32.Parse(config["Jwt:AuthTokenLifetime"]),
+                SecurityKey = config["Jwt:SecurityKey"]!
+            };
+            services.AddSingleton(jwtSettings);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecurityKey)),
+                };
+            });
+
+            services.AddSingleton<TokenGenerator>();
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(Scopes.CreateUser, policy =>
+                    policy.RequireClaim(Scopes.CreateUser));
             });
         }
     }

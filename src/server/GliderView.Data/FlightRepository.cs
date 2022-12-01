@@ -12,24 +12,14 @@ using System.Threading.Tasks;
 
 namespace GliderView.Data
 {
-    public class FlightRepository : IFlightRepository
+    public class FlightRepository : SqlRepository, IFlightRepository
     {
-        private readonly string _connectionString;
 
         public FlightRepository(string connectionString)
+            : base(connectionString)
         {
-            _connectionString = connectionString;
         }
 
-        private SqlConnection GetOpenConnection()
-        {
-            var con = new SqlConnection(_connectionString);
-            if (con.State != ConnectionState.Open)
-            {
-                con.Open();
-            }
-            return con;
-        }
 
         public async Task<Service.Models.Flight?> GetFlight(Guid flightId)
         {
@@ -73,7 +63,7 @@ FROM dbo.Flight F
 WHERE F.FlightGuid = @flightId
     AND F.IsDeleted = 0
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -137,7 +127,7 @@ WHERE F.StartDate >= @startDate
     ))
     AND F.IsDeleted = 0
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -168,7 +158,7 @@ FROM Flight F
 WHERE F.FlightGuid = @flightId
     AND F.IsDeleted = 0;
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 return (await con.QueryAsync<Waypoint>(sql, new { flightId }))
                     .ToList();
@@ -188,7 +178,7 @@ UPDATE dbo.Flight
     )
 WHERE FlightGuid = @gliderFlightId
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -340,7 +330,7 @@ VALUES (
                 DistanceTraveled = flight.Statistics?.DistanceTraveled,
                 PatternEntryAltitude = flight.Statistics?.PatternEntryAltitude
             };
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
                 await con.ExecuteAsync(sql, args);
         }
 
@@ -406,7 +396,7 @@ FROM dbo.Aircraft A
 WHERE A.TrackerId = @trackerId
     AND A.IsDeleted = 0;
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -441,7 +431,7 @@ VALUES (
 SELECT @id;
 ";
 
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
