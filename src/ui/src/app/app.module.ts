@@ -18,11 +18,19 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
 import { Chart } from 'chart.js';
 import Annotation from 'chartjs-plugin-annotation';
 import { icon, Marker } from 'leaflet';
+import { LoginComponent } from './components/login/login.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ProfileComponent } from './components/profile/profile.component';
+import { ChangePasswordModalComponent } from './components/change-password-modal/change-password-modal.component';
+import { AUTH_INTERCEPTOR } from './interceptors/auth.interceptor';
 
 Chart.register(Annotation);
 
@@ -46,7 +54,10 @@ Marker.prototype.options.icon = iconDefault;
     AppComponent,
     FlightsComponent,
     AddFlightModalComponent,
-    FlightComponent
+    FlightComponent,
+    LoginComponent,
+    ProfileComponent,
+    ChangePasswordModalComponent
   ],
   imports: [
     BrowserModule,
@@ -54,6 +65,7 @@ Marker.prototype.options.icon = iconDefault;
     HttpClientModule,
     NgbModule,
     BrowserAnimationsModule,
+    ReactiveFormsModule,
 
     MatCardModule,
     MatToolbarModule,
@@ -64,9 +76,14 @@ Marker.prototype.options.icon = iconDefault;
     MatGridListModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    MatFormFieldModule,
+    MatInputModule,
+
     NgChartsModule,
   ],
-  providers: [],
+  providers: [
+    AUTH_INTERCEPTOR
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

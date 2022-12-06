@@ -63,7 +63,10 @@
                         <mat-icon>more_vert</mat-icon>
                     </button>
                     <mat-menu #menu="matMenu">
-                        <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+                        <ng-container *ngIf="flight.flightId">
+                            <button mat-menu-item (click)="addToLogbook(user)" *ngIf="user$ | async as user">Add to Logbook</button>
+                            <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+                        </ng-container>
                         <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
                     </mat-menu>
                 </div>

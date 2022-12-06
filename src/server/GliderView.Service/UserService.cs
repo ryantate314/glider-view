@@ -21,7 +21,6 @@ namespace GliderView.Service
 
         public UserService(IUserRepository userRepository, ILogger<UserService> logger, IPasswordHasher<User> passwordHasher)
         {
-
             _userRepository = userRepository;
             _logger = logger;
             _passwordHasher = passwordHasher;
@@ -71,7 +70,7 @@ namespace GliderView.Service
         {
             var user = new User()
             {
-                EmailAddress = email,
+                Email = email,
                 Name = name,
                 Role = role
             };
@@ -108,7 +107,7 @@ namespace GliderView.Service
             }
 
             User user = (await _userRepository.GetUser(invite.UserId))!;
-            if (!String.Equals(email, user.EmailAddress))
+            if (!String.Equals(email, user.Email))
             {
                 _logger.LogInformation($"Email address does not match for token {invitation.Token}: {email}");
                 throw new InvalidOperationException("Token is not valid.");
@@ -117,6 +116,7 @@ namespace GliderView.Service
             user.HashedPassword = _passwordHasher.HashPassword(user, password);
 
             await _userRepository.UpdatePassword(user);
+            await _userRepository.DeleteInvitation(invitation.Token);
 
             return user;
         }
@@ -133,7 +133,7 @@ namespace GliderView.Service
             }
 
             User user = (await _userRepository.GetUser(invite.UserId))!;
-            if (!String.Equals(email, user.EmailAddress))
+            if (!String.Equals(email, user.Email))
             {
                 _logger.LogInformation($"Email address does not match for token {token}: {email}");
                 return false;
@@ -149,6 +149,32 @@ namespace GliderView.Service
                 .ToString()
                 .Replace("-", "")
                 .ToLower();
+        }
+
+        public Task<User> GetUser(Guid userId)
+        {
+            return _userRepository.GetUser(userId);
+        }
+
+        public async Task<bool> UpdatePassword(Guid userId, string currentPassword, string newPassword)
+        {
+            User? user = await _userRepository.GetUser(userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User does not exist.");
+            }
+
+            if (String.IsNullOrEmpty(user.HashedPassword))
+                throw new InvalidOperationException("User does not have a password.");
+
+            if (_passwordHasher.VerifyHashedPassword(user, user.HashedPassword, currentPassword) == PasswordVerificationResult.Failed)
+                return false;
+
+            user.HashedPassword = _passwordHasher.HashPassword(user, newPassword);
+
+            await _userRepository.UpdatePassword(user);
+
+            return true;
         }
     }
 }

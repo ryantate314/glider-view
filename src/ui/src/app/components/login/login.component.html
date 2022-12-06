@@ -1,0 +1,25 @@
+<h1 mat-dialog-title>Log In</h1>
+
+<form (submit)="onSubmit($event)" [formGroup]="form">
+    <div mat-dialog-content>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Email Address</mat-label>
+            <input matInput type="email" required="required" maxlength="255" formControlName="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Password</mat-label>
+            <input type="password" matInput required="required" maxlength="100" formControlName="password" />
+        </mat-form-field>
+
+        <p class="error-message" *ngIf="loginError">{{ loginError }}</p>
+
+    </div>
+
+    <div mat-dialog-actions class="justify-content-end">
+        <button type="button" mat-raised-button (click)="onClose()">Cancel</button>
+        <button type="submit" mat-raised-button color="primary">Log In</button>
+    </div>
+
+</form>

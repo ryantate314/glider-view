@@ -11,6 +11,6 @@ namespace GliderView.API.Models
         [Required]
         [EmailAddress]
         [MaxLength(255)]
-        public string? EmailAddress { get; set; }
+        public string? Email { get; set; }
     }
 }

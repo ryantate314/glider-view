@@ -39,8 +39,9 @@ namespace GliderView.API
                 app.UseSwaggerUI();
                 app.UseCors(policy =>
                 {
-                    policy.AllowAnyOrigin();
-                    policy.AllowAnyHeader();
+                    policy.WithOrigins("http://localhost:4200")
+                        .AllowCredentials()
+                        .AllowAnyHeader();
                 });
                 app.UseHangfireDashboard();
             }
@@ -111,7 +112,9 @@ namespace GliderView.API
                 Audience = config["Jwt:Audience"],
                 Issuer = config["Jwt:Issuer"],
                 AuthTokenLifetime = Int32.Parse(config["Jwt:AuthTokenLifetime"]),
-                SecurityKey = config["Jwt:SecurityKey"]!
+                RefreshTokenLifetime = Int32.Parse(config["Jwt:RefreshTokenLifetime"]),
+                RefreshSecurityKey = config["Jwt:RefreshSecurityKey"]!,
+                AuthSecurityKey = config["Jwt:AuthSecurityKey"]!
             };
             services.AddSingleton(jwtSettings);
 
@@ -126,11 +129,12 @@ namespace GliderView.API
                 {
                     ValidIssuer = jwtSettings.Issuer,
                     ValidAudience = jwtSettings.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecurityKey)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.AuthSecurityKey)),
                 };
             });
 
             services.AddSingleton<TokenGenerator>();
+            services.AddSingleton<TokenValidator>();
 
             services.AddAuthorization(options =>
             {

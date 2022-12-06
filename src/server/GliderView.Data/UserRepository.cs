@@ -21,7 +21,13 @@ namespace GliderView.Data
         {
             const string sql = @"
 SELECT
-    *
+    U.UserGuid AS UserId
+    , U.Name
+    , U.Email
+    , U.Role
+    , U.HashedPassword
+    , U.FailedLoginAttempts
+    , U.IsLocked
 FROM dbo.[User] U
 WHERE U.UserGuid = @userId
     AND U.IsDeleted = 0;
@@ -37,8 +43,9 @@ WHERE U.UserGuid = @userId
             const string sql = @"
 SELECT
     U.UserGuid AS UserId
-    , U.Email AS EmailAddress
+    , U.Email AS Email
     , U.Name
+    , U.Role
     , U.HashedPassword
     , U.FailedLoginAttempts
     , U.IsLocked
@@ -63,7 +70,7 @@ INSERT INTO [User] (
 )
 VALUES (
     @userId
-    , @emailAddress
+    , @email
     , @name
     , @role
 )
@@ -74,7 +81,7 @@ VALUES (
                 {
                     user.UserId,
                     user.Role,
-                    user.EmailAddress,
+                    user.Email,
                     user.Name
                 };
                 await con.ExecuteAsync(sql, args);
@@ -155,7 +162,7 @@ WHERE I.Token = @token
             const string sql = @"
 UPDATE dbo.[User]
     SET FailedLoginAttempts = @failedLoginAttempts
-        , IsLockedOut = @isLockedOut
+        , IsLocked = @isLockedOut
     WHERE UserGuid = @userId
         AND IsDeleted = 0;
 ";
@@ -171,13 +178,27 @@ UPDATE dbo.[User]
 UPDATE dbo.[User]
     SET HashedPassword = @hashedPassword
         , FailedLoginAttempts = 0
-        , IsLocked = false
+        , IsLocked = 0
 WHERE UserGuid = @userId
     AND IsDeleted = 0;
 ";
             using (var con = GetOpenConnection())
             {
                 await con.ExecuteAsync(sql, new { user.UserId, user.HashedPassword });
+            }
+        }
+
+        public async Task DeleteInvitation(string token)
+        {
+            const string sql = @"
+UPDATE dbo.Invitation
+    SET IsDeleted = 1
+WHERE Token = @token
+    AND IsDeleted = 0;
+";
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, new { token });
             }
         }
     }

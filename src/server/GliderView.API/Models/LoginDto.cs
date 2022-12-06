@@ -6,7 +6,7 @@ namespace GliderView.API.Models
     {
         [Required]
         [MaxLength(255)]
-        public string? EmailAddress { get; set; }
+        public string? Email { get; set; }
 
         [Required]
         [MaxLength(255)]

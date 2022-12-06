@@ -10,12 +10,14 @@ namespace GliderView.API
     {
         public string Issuer { get; set; }
         public string Audience { get; set; }
-        public string SecurityKey { get; set; }
+        public string AuthSecurityKey { get; set; }
+        public string RefreshSecurityKey { get; set; }
 
         /// <summary>
         /// Minutes
         /// </summary>
         public int AuthTokenLifetime { get; set; }
+        public int RefreshTokenLifetime { get; set; }
     }
 
     public class Token
@@ -27,18 +29,20 @@ namespace GliderView.API
     public class TokenGenerator
     {
         private readonly JwtSettings _settings;
-        private readonly SecurityKey _key;
+        private readonly SecurityKey _authKey;
+        private readonly SecurityKey _refreshKey;
         private readonly JwtSecurityTokenHandler _tokenHandler;
 
         public TokenGenerator(JwtSettings settings)
         {
             _settings = settings;
-            _key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.SecurityKey));
+            _authKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.AuthSecurityKey));
+            _refreshKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.RefreshSecurityKey));
 
             _tokenHandler = new JwtSecurityTokenHandler();
         }
 
-        public Token GenerateAuthToken(User user)
+        public Token GenerateAuthToken(User user, IEnumerable<string>? scopes = null)
         {
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -49,15 +53,15 @@ namespace GliderView.API
                 Expires = DateTime.UtcNow.AddMinutes(_settings.AuthTokenLifetime),
                 Issuer = _settings.Issuer,
                 Audience = _settings.Audience,
-                SigningCredentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(_authKey, SecurityAlgorithms.HmacSha256Signature)
             };
 
-            if (user.Role == User.ROLE_ADMIN)
+            if (scopes != null)
             {
                 tokenDescriptor.Subject.AddClaims(
-                    Scopes.Roles.Admin.Select(x => new Claim(x, ""))
+                    scopes.Select(x => new Claim(x, ""))
                 );
-            }
+            };
 
             var token = _tokenHandler.CreateToken(tokenDescriptor);
 
@@ -67,5 +71,36 @@ namespace GliderView.API
                 ValidTo = token.ValidTo
             };
         }
+
+        public Token GenerateRefreshToken(User user, IEnumerable<string>? scopes = null)
+        {
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(_settings.RefreshTokenLifetime),
+                Issuer = _settings.Issuer,
+                Audience = _settings.Audience,
+                SigningCredentials = new SigningCredentials(_refreshKey, SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            if (scopes != null)
+            {
+                tokenDescriptor.Subject.AddClaims(
+                    scopes.Select(x => new Claim(x, ""))
+                );
+            };
+
+            var token = _tokenHandler.CreateToken(tokenDescriptor);
+
+            return new Token()
+            {
+                Value = _tokenHandler.WriteToken(token),
+                ValidTo = token.ValidTo
+            };
+        }
+
     }
 }

@@ -4,6 +4,7 @@ using GliderView.Service.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web.Resource;
+using System.Security.Claims;
 
 namespace GliderView.API.Controllers
 {
@@ -14,12 +15,20 @@ namespace GliderView.API.Controllers
         private readonly UserService _service;
         private readonly ILogger<UserController> _logger;
         private readonly TokenGenerator _tokenGenerator;
+        private readonly TokenValidator _tokenValidator;
 
-        public UserController(UserService service, ILogger<UserController> logger, TokenGenerator tokenGenerator)
+        private readonly bool _isDev;
+
+        private const string REFRESH_TOKEN_COOKIE = "X-Refresh-Token";
+
+        public UserController(UserService service, ILogger<UserController> logger, TokenGenerator tokenGenerator, TokenValidator tokenValidator, IConfiguration config)
         {
             _service = service;
             _logger = logger;
             _tokenGenerator = tokenGenerator;
+            _tokenValidator = tokenValidator;
+
+            _isDev = config.IsDevelopment();
         }
 
         [AllowAnonymous]
@@ -29,20 +38,76 @@ namespace GliderView.API.Controllers
             if (login == null || !ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            User? user = await _service.ValidateUsernameAndPassword(login.EmailAddress!, login.Password!);
+            User? user = await _service.ValidateUsernameAndPassword(login.Email!, login.Password!);
 
             if (user == null)
                 return Unauthorized();
 
-            // TODO: Add refresh token
-            //Response.Cookies.Append("")
+            AddRefreshToken(
+                _tokenGenerator.GenerateRefreshToken(user)
+            );
 
             var userDto = new
             {
                 User = user,
-                Token = _tokenGenerator.GenerateAuthToken(user)
+                Token = _tokenGenerator.GenerateAuthToken(user),
+                Scopes = Scopes.GetScopesForRole(user.Role)
             };
             return Ok(userDto);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            string? refreshToken = GetRefreshToken();
+
+            if (String.IsNullOrEmpty(refreshToken))
+            {
+                _logger.LogDebug("Missing refresh token");
+                return Unauthorized();
+            }
+
+            if (!_tokenValidator.TryValidateToken(refreshToken, out ClaimsPrincipal? claims))
+                return Unauthorized();
+
+            Guid userId = _tokenValidator.GetUserId(claims!);
+
+            User user = await _service.GetUser(userId);
+
+            AddRefreshToken(
+                _tokenGenerator.GenerateRefreshToken(user)
+            );
+
+            Token token = _tokenGenerator.GenerateAuthToken(user, Scopes.GetScopesForRole(user.Role));
+
+            var userDto = new
+            {
+                User = user,
+                Token = _tokenGenerator.GenerateAuthToken(user),
+                Scopes = Scopes.GetScopesForRole(user.Role)
+            };
+            return Ok(userDto);
+        }
+
+        private string? GetRefreshToken()
+        {
+            return Request.Cookies[REFRESH_TOKEN_COOKIE];
+        }
+
+        private void AddRefreshToken(Token token)
+        {
+            Response.Cookies.Append(
+                REFRESH_TOKEN_COOKIE,
+                token.Value,
+                new CookieOptions()
+                {
+                    HttpOnly = true,
+                    Secure = !_isDev,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = token.ValidTo
+                }
+            );
         }
 
         [HttpPost]
@@ -52,7 +117,7 @@ namespace GliderView.API.Controllers
             if (user == null || !ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _service.CreateUser(user.EmailAddress!, user.Name!, user.Role!.Value);
+            await _service.CreateUser(user.Email!, user.Name!, user.Role!.Value);
 
             return Ok();
         }
@@ -76,7 +141,7 @@ namespace GliderView.API.Controllers
             if (dto == null || !ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            bool isValid = await _service.ValidateInvitation(dto.EmailAddress!, dto.Token!);
+            bool isValid = await _service.ValidateInvitation(dto.Email!, dto.Token!);
 
             if (isValid)
                 return Ok();
@@ -99,7 +164,7 @@ namespace GliderView.API.Controllers
             User user;
             try
             {
-                user = await _service.BuildUser(invite, dto.EmailAddress!, dto.Password!);
+                user = await _service.BuildUser(invite, dto.Email!, dto.Password!);
             }
             catch (InvalidOperationException)
             {
@@ -114,6 +179,32 @@ namespace GliderView.API.Controllers
                 Token = _tokenGenerator.GenerateAuthToken(user)
             };
             return Ok(userDto);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("logout")]
+        public IActionResult LogOut()
+        {
+            if (GetRefreshToken() != null)
+                Response.Cookies.Delete(REFRESH_TOKEN_COOKIE);
+
+            return Ok();
+        }
+
+        [HttpPost("update-password")]
+        public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto dto)
+        {
+            if (dto == null || !ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            Guid userId = User.GetUserId()!.Value;
+
+            bool passwordCorrect = await _service.UpdatePassword(userId, dto.CurrentPassword, dto.NewPassword);
+
+            if (!passwordCorrect)
+                return Unauthorized();
+
+            return Ok();
         }
     }
 }

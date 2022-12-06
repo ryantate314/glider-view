@@ -1,12 +1,14 @@
 USE master
 GO
 
-CREATE LOGIN gliderViewer WITH PASSWORD = 'Passw0rd';
+CREATE LOGIN gliderViewer WITH PASSWORD = '************';
 
 USE GliderView
 GO
 
 CREATE USER gliderViewer FOR LOGIN gliderViewer;
+
+--ALTER USER gliderViewer WITH LOGIN = gliderViewer;
 
 GRANT SELECT, INSERT, UPDATE, EXECUTE ON schema::dbo TO gliderViewer;
 GO
@@ -90,6 +92,19 @@ CREATE TABLE [User] (
 	IsDeleted BIT NOT NULL DEFAULT 0
 )
 
+INSERT INTO [User] (
+	Email
+	, Name
+	, Role
+	, HashedPassword
+)
+VALUES (
+	'ryantate314@gmail.com'
+	, 'Ryan T'
+	, 'A'
+	, 'AQAAAAIAAYagAAAAEBusr7qrvh8x4L8HJrYBQ941l4s4rRH2BWyCiRnaagvqM2f6nfvo5unZbtlS1P55Hw=='
+)
+
 CREATE TABLE Invitation (
 	InvitationId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
 	UserId INT NOT NULL FOREIGN KEY REFERENCES [User] (UserId),
@@ -103,6 +118,8 @@ CREATE TABLE Occupant (
 	OccupantId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
 	FlightId INT NOT NULL FOREIGN KEY REFERENCES Flight (FlightId),
 	UserId INT FOREIGN KEY REFERENCES [User] (UserId),
+	FlightNumber INT,
+	Notes VARCHAR(MAX),
 	Name VARCHAR(100)
 )
 
@@ -148,6 +165,8 @@ GO
 /* ROLLBACK */
 
 /*
+
+USE GliderView
 
 GO
 
