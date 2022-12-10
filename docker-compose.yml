@@ -1,23 +1,30 @@
 version: "3"
 services:
   ui:
-    build: ui
+    build: ./src/ui
     ports:
       - "9003:80"
+    restart: unless-stopped
   api:
     build:
-      context: ./server
+      context: ./src/server
     volumes:
       - /mnt/web-hosting/igc-files:/igc-files
       - /var/log/glider-view:/logs
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings:gliderView=${CONNECTION_STRING}
     ports:
       - "9004:80"
+    restart: unless-stopped
   igcd:
-    build: igcd
+    build:
+      context: ./src/igcd
+    # command: -debug
     volumes:
       - type: bind
-        source: ./igcd/config.yml
-        target: /app/igcd/config.yml
+        source: ./src/igcd/conf.yml
+        target: /igcd/conf.yml
         read_only: true
+    restart: unless-stopped
+

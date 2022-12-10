@@ -5,7 +5,7 @@ igcpath: data
 
 webhook:
   active: true
-  url: "https://api/igcd/webhook"
+  url: "http://api/igcd/webhook"
   delay: 0
   headers:
     "X-Api-Key": "Ryan-Test"
