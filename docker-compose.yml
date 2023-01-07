@@ -14,6 +14,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings:gliderView=${CONNECTION_STRING}
+      - Jwt:AuthSecurityKey=${AUTH_TOKEN}
+      - Jwt:RefreshSecurityKey=${REFRESH_TOKEN}
     ports:
       - "9004:80"
     restart: unless-stopped
