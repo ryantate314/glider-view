@@ -1,6 +1,7 @@
 ﻿using GliderView.Data;
 using GliderView.Service;
 using GliderView.Service.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GliderView.API.Controllers
@@ -90,6 +91,7 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpPost("{flightId}/pilots")]
         public async Task<IActionResult> AddPilot([FromRoute] Guid flightId, [FromQuery] Guid? pilotId)
         {
@@ -101,6 +103,7 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpDelete("{flightId}/pilots/{pilotId}")]
         public async Task<IActionResult> AddPilot([FromRoute] Guid flightId, [FromRoute] Guid pilotId)
         {
