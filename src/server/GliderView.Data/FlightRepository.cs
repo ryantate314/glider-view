@@ -12,28 +12,10 @@ using System.Threading.Tasks;
 
 namespace GliderView.Data
 {
-    public class FlightRepository : IFlightRepository
+    public class FlightRepository : SqlRepository, IFlightRepository
     {
-        private readonly string _connectionString;
 
-        public FlightRepository(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        private SqlConnection GetOpenConnection()
-        {
-            var con = new SqlConnection(_connectionString);
-            if (con.State != ConnectionState.Open)
-            {
-                con.Open();
-            }
-            return con;
-        }
-
-        public async Task<Service.Models.Flight?> GetFlight(Guid flightId)
-        {
-            const string sql = @"
+        private const string FLIGHT_SELECT = @"
 SELECT
     F.FlightGuid AS FlightId
     , F.StartDate
@@ -70,10 +52,21 @@ FROM dbo.Flight F
     LEFT JOIN dbo.FlightStatistics FS
         ON F.FlightId = FS.FlightId
             AND FS.IsDeleted = 0
+";
+
+        public FlightRepository(string connectionString)
+            : base(connectionString)
+        {
+        }
+
+
+        public async Task<Service.Models.Flight?> GetFlight(Guid flightId)
+        {
+            const string sql = FLIGHT_SELECT + @"
 WHERE F.FlightGuid = @flightId
     AND F.IsDeleted = 0
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -86,43 +79,7 @@ WHERE F.FlightGuid = @flightId
 
         public async Task<List<Service.Models.Flight>> GetFlights(FlightSearch search)
         {
-            const string sql = @"
-SELECT
-    F.FlightGuid AS FlightId
-    , F.StartDate
-    , F.EndDate
-    , F.IgcFilename
-
-    -- The tow plane flight
-    , Tow.FlightGuid AS TowFlightId
-    , TowAircraft.AircraftGuid AS TowAircraftId
-    , TowAircraft.Description AS TowAircraftDescription
-    , TowAircraft.Registration AS TowAircraftRegistration
-    , TowAircraft.TrackerId AS TowAircraftTrackerId
-
-    , A.AircraftGuid AS AircraftId
-    , A.TrackerId
-    , A.Description AS AircraftDescription
-    , A.Registration AS AircraftRegistration
-    , A.NumSeats
-    , A.IsGlider
-
-    -- Flight Statistics
-    , FS.MaxAltitude
-    , FS.ReleaseHeight
-    , FS.AltitudeGained
-    , FS.DistanceTraveled
-    , FS.PatternEntryAltitude
-FROM dbo.Flight F
-    LEFT JOIN dbo.Aircraft A
-        ON F.AircraftId = A.AircraftId
-    LEFT JOIN dbo.Flight Tow
-        ON F.TowId = Tow.FlightId
-    LEFT JOIN dbo.Aircraft TowAircraft
-        ON Tow.AircraftId = TowAircraft.AircraftId
-    LEFT JOIN dbo.FlightStatistics FS
-        ON F.FlightId = FS.FlightId
-            AND FS.IsDeleted = 0
+            const string sql = FLIGHT_SELECT + @"
 WHERE F.StartDate >= @startDate
     AND F.StartDate <= @endDate
     AND (@aircraftId IS NULL OR A.AircraftGuid = @aircraftId)
@@ -137,7 +94,7 @@ WHERE F.StartDate >= @startDate
     ))
     AND F.IsDeleted = 0
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -150,6 +107,24 @@ WHERE F.StartDate >= @startDate
                     .Select(flight => ConvertDataToService(flight)!)
                     .ToList();
             }
+        }
+
+        private async Task<List<Service.Models.Flight>> GetFlights(IEnumerable<Guid> flightIds, IDbConnection connection)
+        {
+            const string sql = FLIGHT_SELECT + @"
+WHERE F.FlightGuid IN (
+    SELECT Id
+    FROM @flightIds
+)
+    AND F.IsDeleted = 0
+";
+            var args = new
+            {
+                flightIds = flightIds.AsTableValuedParameter()
+            };
+            var flights = await connection.QueryAsync<Data.Models.Flight>(sql, args);
+            return flights.Select(flight => ConvertDataToService(flight)!)
+                .ToList();
         }
 
         public async Task<List<Waypoint>> GetWaypoints(Guid flightId)
@@ -168,7 +143,7 @@ FROM Flight F
 WHERE F.FlightGuid = @flightId
     AND F.IsDeleted = 0;
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 return (await con.QueryAsync<Waypoint>(sql, new { flightId }))
                     .ToList();
@@ -188,7 +163,7 @@ UPDATE dbo.Flight
     )
 WHERE FlightGuid = @gliderFlightId
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -340,7 +315,7 @@ VALUES (
                 DistanceTraveled = flight.Statistics?.DistanceTraveled,
                 PatternEntryAltitude = flight.Statistics?.PatternEntryAltitude
             };
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
                 await con.ExecuteAsync(sql, args);
         }
 
@@ -406,7 +381,7 @@ FROM dbo.Aircraft A
 WHERE A.TrackerId = @trackerId
     AND A.IsDeleted = 0;
 ";
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -441,7 +416,7 @@ VALUES (
 SELECT @id;
 ";
 
-            using (var con = new SqlConnection(_connectionString))
+            using (var con = GetOpenConnection())
             {
                 var args = new
                 {
@@ -498,6 +473,102 @@ END CATCH
             using (var con = GetOpenConnection())
             {
                 await con.ExecuteAsync(sql, args);
+            }
+        }
+
+        public async Task AddPilot(Guid flightId, Guid pilotId)
+        {
+            const string sql = @"
+-- Look up Flight primary key
+DECLARE @intFlightId INT = (
+    SELECT
+        FlightId
+    FROM dbo.Flight
+    WHERE FlightGuid = @flightId
+        AND IsDeleted = 0
+);
+IF @intFlightId IS NULL
+    THROW 51000, 'Flight does not exist.', 1
+-- Look up User primary key
+DECLARE @intUserId INT = (
+    SELECT
+        UserId
+    FROM dbo.[User]
+    WHERE UserGuid = @pilotId
+        AND IsDeleted = 0
+);
+IF @intUserId IS NULL
+    THROW 51000, 'User does not exist.', 1
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Occupant WHERE FlightId = @intFlightId AND UserId = @intUserId)
+    INSERT INTO dbo.Occupant (
+        FlightId
+        , UserId
+    )
+    VALUES (
+        @intFlightId
+        , @intUserId
+    )
+";
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, new { flightId, pilotId });
+            }
+        }
+
+        public async Task<List<LogBookEntry>> GetLogBook(Guid pilotId)
+        {
+            const string sql = @"
+SELECT
+    F.FlightGuid AS FlightId
+    , O.FlightNumber
+    , O.Notes AS Remarks
+FROM dbo.Flight F
+    JOIN dbo.Occupant O
+        ON F.FlightID = O.FlightId
+    JOIN dbo.[User] U
+        ON O.UserId = U.UserId
+WHERE U.UserGuid = @userId
+    AND F.IsDeleted = 0
+";
+
+            using (var con = GetOpenConnection())
+            {
+                var args = new
+                {
+                    userId = pilotId
+                };
+
+                List<Service.Models.LogBookEntry> logEntries = (await con.QueryAsync<Service.Models.LogBookEntry>(sql, args))
+                    .ToList();
+
+                var flights = await GetFlights(logEntries.Select(x => x.FlightId), con);
+
+                foreach (var flight in flights)
+                {
+                    logEntries.Find(x => x.FlightId == flight.FlightId)!.Flight = flight;
+                }
+
+                return logEntries;
+            }
+
+        }
+
+        public async Task RemovePilot(Guid flightId, Guid pilotId)
+        {
+            const string sql = @"
+DELETE O
+FROM dbo.Occupant O
+    JOIN dbo.[User] U
+        ON O.UserId = U.UserId
+    JOIN dbo.Flight F
+        ON O.FlightId = F.FlightId
+WHERE U.UserGuid = @pilotId
+    AND F.FlightGuid = @flightId
+";
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, new { flightId, pilotId });
             }
         }
     }

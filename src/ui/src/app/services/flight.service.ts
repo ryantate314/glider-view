@@ -8,6 +8,7 @@ import { Flight } from '../models/flight.model';
   providedIn: 'root'
 })
 export class FlightService {
+  
 
   constructor(private http: HttpClient) { }
 
@@ -21,7 +22,7 @@ export class FlightService {
         }
       }
     ).pipe(
-      map(flights => flights.map(this.parseFlight))
+      map(flights => flights.map(FlightService.parseFlight))
     )
   }
 
@@ -68,7 +69,7 @@ export class FlightService {
         }
       }
     ).pipe(
-      map(this.parseFlight)
+      map(FlightService.parseFlight)
     );
   }
 
@@ -79,7 +80,25 @@ export class FlightService {
     );
   }
 
-  private parseFlight(flight: Flight): Flight {
+  public addPilot(flightId: string, userId: string): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/flights/${flightId}/pilots`,
+      null,
+      {
+        params: {
+          'pilotId': userId
+        }
+      }
+    );
+  }
+
+  public removePilot(flightId: string, userId: string): any {
+    return this.http.delete(
+      `${environment.apiUrl}/flights/${flightId}/pilots/${userId}`
+    );
+  }
+
+  public static parseFlight(flight: Flight): Flight {
     return {
       ...flight,
       startDate: new Date(flight.startDate + "Z"),

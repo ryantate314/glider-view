@@ -1,0 +1,80 @@
+<div class="container-fluid">
+    <h1>Pilot Logbook</h1>
+
+    <ng-container *ngIf="flights$ | async as entries; else loading">
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Flight No.</th>
+                        <th>Type of Glider</th>
+                        <th>License No.</th>
+                        <th colspan="2">Altitude</th>
+                        <th>Location</th>
+                        <th colspan="2">Total Time</th>
+                        <th>Remarks</th>
+                        <!-- Elepsis -->
+                        <th>&nbsp;</th>
+                    </tr>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+                        <!-- Altitude -->
+                        <th>Release</th>
+                        <th>Max</th>
+
+                        <th>&nbsp;</th>
+
+                        <!-- Time -->
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+
+                        <!-- Remarks -->
+                        <th>&nbsp;</th>
+                        <!-- Elepsis -->
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let entry of entries" [routerLink]="['/flights', entry.flight.flightId]"
+                        class="clickable">
+                        <td>{{ entry.flight.startDate | date }}</td>
+                        <td>{{ entry.flightNumber }}</td>
+                        <td>{{ entry.flight.aircraft?.description }}</td>
+                        <td>{{ entry.flight.aircraft?.registrationId }}</td>
+                        <!-- Altitude -->
+                        <td>{{ entry.flight.statistics?.releaseHeight }}</td>
+                        <td>{{ entry.flight.statistics?.maxAltitude }}</td>
+
+                        <td title="Chilhowee Gliderport">92A</td>
+
+                        <!-- Hobbs Time -->
+                        <td>{{ getHobsTime(entry.flight.duration).hours }}</td>
+                        <td>{{ getHobsTime(entry.flight.duration).tenths }}</td>
+
+                        <td>{{ entry.remarks }}</td>
+
+                        <td>
+                            <button mat-icon-button [matMenuTriggerFor]="menu" (click)="onMoreClick($event, entry)">
+                                <mat-icon>more_horiz</mat-icon>
+                            </button>
+                            <mat-menu #menu="matMenu">
+                                <ng-container>
+                                    <button mat-menu-item (click)="removeFlight(entry)">Remove Flight</button>
+                                </ng-container>
+                            </mat-menu>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div><!-- /.table-responsive-->
+    </ng-container>
+
+    <ng-template #loading>
+        Loading...
+    </ng-template>
+</div>

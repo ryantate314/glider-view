@@ -1,9 +1,18 @@
+using GliderView.Data;
 using GliderView.Service;
+using GliderView.Service.Exeptions;
+using GliderView.Service.Models;
+using GliderView.Service.Repositories;
 using Hangfire;
 using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using NLog.Extensions.Logging;
 using NLog.Web;
 using System.IO.Abstractions;
+using System.Text;
 
 namespace GliderView.API
 {
@@ -19,7 +28,7 @@ namespace GliderView.API
             ConfigureServices(builder.Services, configuration);
 
             builder.Logging.ClearProviders();
-            
+
             builder.Host.UseNLog();
             NLog.LogManager.Configuration = new NLogLoggingConfiguration(configuration.GetSection("NLog"));
 
@@ -32,18 +41,23 @@ namespace GliderView.API
                 app.UseSwaggerUI();
                 app.UseCors(policy =>
                 {
-                    policy.AllowAnyOrigin();
-                    policy.AllowAnyHeader();
+                    policy.WithOrigins("http://localhost:4200")
+                        .AllowCredentials()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
                 });
                 app.UseHangfireDashboard();
             }
 
-            app.UseHttpsRedirection();
+            // Because Docker is behind a Nginx reverse proxy, we don't need SSL
+            //app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapControllers();
+            app.UseExceptionMiddleware();
 
+            app.MapControllers();
 
             app.Run();
         }
@@ -72,6 +86,8 @@ namespace GliderView.API
             services.AddTransient<IgcService>();
             services.AddTransient<FlightService>();
             services.AddSingleton<IFlightAnalyzer, FlightAnalyzer>();
+            services.AddTransient<UserService>();
+            services.AddTransient<IPasswordHasher<User>, PasswordHasher<User>>();
 
             Data.Configuration.RegisterServices(services, config);
 
@@ -94,6 +110,55 @@ namespace GliderView.API
                 // Only have 1 worker to prevent concurrency issues
                 options.WorkerCount = 1;
             });
+
+            // Setup JWT Authentication
+            var jwtSettings = new JwtSettings()
+            {
+                Audience = config["Jwt:Audience"],
+                Issuer = config["Jwt:Issuer"],
+                AuthTokenLifetime = Int32.Parse(config["Jwt:AuthTokenLifetime"]),
+                RefreshTokenLifetime = Int32.Parse(config["Jwt:RefreshTokenLifetime"]),
+                RefreshSecurityKey = config["Jwt:RefreshSecurityKey"]!,
+                AuthSecurityKey = config["Jwt:AuthSecurityKey"]!
+            };
+            services.AddSingleton(jwtSettings);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.AuthSecurityKey)),
+                };
+            });
+
+            services.AddSingleton<TokenGenerator>();
+            services.AddSingleton<TokenValidator>();
+
+            services.AddAuthorization(options =>
+            {
+                RegisterScopes(options);
+            });
+        }
+
+        private static void RegisterScopes(AuthorizationOptions options)
+        {
+            foreach (var scope in Scopes.AllScopes)
+            {
+                options.AddPolicy(scope, policy =>
+                    policy.RequireAssertion(context =>
+                        context.User.HasClaim(claim => claim.Type == "Scopes"
+                            && claim.Value.Split(",").Contains(scope)
+                        )
+                    )
+                );
+            }
         }
     }
 }

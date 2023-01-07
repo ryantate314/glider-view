@@ -9,6 +9,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
 import * as moment from 'moment';
 import { SettingsService } from 'src/app/services/settings.service';
+import { User } from 'src/app/models/user.model';
+import { AuthService } from 'src/app/services/auth.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface WeekDay {
   abbreviation: string;
@@ -30,6 +33,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public flights$: Observable<Flight[]>;
   public weekDays$: Observable<WeekDay[]>;
   public isLoading$ = new BehaviorSubject<boolean>(true);
+  public user$: Observable<User | null>;
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -39,7 +43,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private route: ActivatedRoute,
     private dialog: MatDialog,
     private router: Router,
-    private settings: SettingsService
+    private settings: SettingsService,
+    private auth: AuthService,
+    private admiralSnackbar: MatSnackBar
   ) {
     this.date$ = this.route.params.pipe(
       map(params => {
@@ -140,6 +146,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     this.sortDirection$.next(
       this.settings.flightSortOrder
     );
+
+    this.user$ = this.auth.user$;
   }
 
   private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
@@ -269,5 +277,11 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     return !value
       ? null
       : Math.round(value! * 3.281);
+  }
+
+  public addToLogbook(flight: Flight, user: User) {
+    this.flightService.addPilot(flight.flightId!, user.userId).subscribe(() => {
+      this.admiralSnackbar.open("Flight added to your logbook.");
+    });
   }
 }

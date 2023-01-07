@@ -1,12 +1,14 @@
 USE master
 GO
 
-CREATE LOGIN gliderViewer WITH PASSWORD = 'Passw0rd';
+CREATE LOGIN gliderViewer WITH PASSWORD = '************';
 
 USE GliderView
 GO
 
 CREATE USER gliderViewer FOR LOGIN gliderViewer;
+
+--ALTER USER gliderViewer WITH LOGIN = gliderViewer;
 
 GRANT SELECT, INSERT, UPDATE, EXECUTE ON schema::dbo TO gliderViewer;
 GO
@@ -83,14 +85,30 @@ CREATE TABLE [User] (
 	[Role] CHAR(1) NOT NULL FOREIGN KEY REFERENCES UserRole (RoleCode),
 	Email VARCHAR(255) NOT NULL,
 	Name VARCHAR(255) NOT NULL,
+	HashedPassword VARCHAR(255),
+	FailedLoginAttempts TINYINT NOT NULL DEFAULT 0,
+	IsLocked BIT NOT NULL DEFAULT 0,
 	AddedDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	IsDeleted BIT NOT NULL DEFAULT 0
+)
+
+INSERT INTO [User] (
+	Email
+	, Name
+	, Role
+	, HashedPassword
+)
+VALUES (
+	'ryantate314@gmail.com'
+	, 'Ryan T'
+	, 'A'
+	, 'AQAAAAIAAYagAAAAEBusr7qrvh8x4L8HJrYBQ941l4s4rRH2BWyCiRnaagvqM2f6nfvo5unZbtlS1P55Hw=='
 )
 
 CREATE TABLE Invitation (
 	InvitationId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
 	UserId INT NOT NULL FOREIGN KEY REFERENCES [User] (UserId),
-	Token UNIQUEIDENTIFIER NOT NULL,
+	Token CHAR(16) NOT NULL,
 	IssuedDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	ExpirationDate DATETIME NOT NULL,
 	IsDeleted BIT NOT NULL DEFAULT 0
@@ -100,6 +118,8 @@ CREATE TABLE Occupant (
 	OccupantId INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
 	FlightId INT NOT NULL FOREIGN KEY REFERENCES Flight (FlightId),
 	UserId INT FOREIGN KEY REFERENCES [User] (UserId),
+	FlightNumber INT,
+	Notes VARCHAR(MAX),
 	Name VARCHAR(100)
 )
 
@@ -139,6 +159,10 @@ CREATE TYPE Waypoint AS TABLE (
 	FlightEvent TINYINT
 );
 
+CREATE TYPE IdList AS TABLE (
+	Id UNIQUEIDENTIFIER NOT NULL
+);
+
 GO
 
 
@@ -146,15 +170,17 @@ GO
 
 /*
 
+USE GliderView
+
 GO
 
 DROP TABLE Occupant
 DROP TABLE Invitation
 DROP TABLE [User]
 DROP TABLE UserRole
-DROP TABLE Waypoint
-DROP TABLE FlightStatistics
-DROP TABLE Flight
+--DROP TABLE Waypoint
+--DROP TABLE FlightStatistics
+--DROP TABLE Flight
 DROP TABLE Aircraft
 DROP TABLE FlightEventType
 

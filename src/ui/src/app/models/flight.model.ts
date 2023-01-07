@@ -14,6 +14,7 @@ export interface Flight {
 export interface Aircraft {
     aircraftId: string;
     description: string;
+    registrationId: string | null;
     isGlider: boolean | null;
 }
 
@@ -36,4 +37,10 @@ export interface Statistics {
     altitudeGained: number | null;
     maxAltitude: number | null;
     patternEntryAltitude: number | null;
+}
+
+export interface LogBookEntry {
+    flight: Flight;
+    flightNumber: number | null;
+    remarks: string | null;
 }
