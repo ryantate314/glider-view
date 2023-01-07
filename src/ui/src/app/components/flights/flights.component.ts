@@ -11,6 +11,7 @@ import * as moment from 'moment';
 import { SettingsService } from 'src/app/services/settings.service';
 import { User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface WeekDay {
   abbreviation: string;
@@ -43,7 +44,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private dialog: MatDialog,
     private router: Router,
     private settings: SettingsService,
-    private auth: AuthService
+    private auth: AuthService,
+    private admiralSnackbar: MatSnackBar
   ) {
     this.date$ = this.route.params.pipe(
       map(params => {
@@ -277,7 +279,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       : Math.round(value! * 3.281);
   }
 
-  public addToLogbook(user: User) {
-
+  public addToLogbook(flight: Flight, user: User) {
+    this.flightService.addPilot(flight.flightId!, user.userId).subscribe(() => {
+      this.admiralSnackbar.open("Flight added to your logbook.");
+    });
   }
 }

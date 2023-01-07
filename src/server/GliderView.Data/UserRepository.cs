@@ -58,10 +58,36 @@ WHERE U.Email = @email
                 return await con.QueryFirstOrDefaultAsync<User>(sql, new { email });
             }
         }
+        public async Task<IEnumerable<User>> GetUsers()
+        {
+            const string sql = @"
+SELECT
+    U.UserGuid AS UserId
+    , U.Email AS Email
+    , U.Name
+    , U.Role
+    , U.HashedPassword
+    , U.FailedLoginAttempts
+    , U.IsLocked
+FROM dbo.[User] U
+WHERE U.IsDeleted = 0;
+";
+            using (var con = GetOpenConnection())
+                return (await con.QueryAsync<User>(sql))
+                    .ToList();
+        }
 
         public async Task CreateUser(User user)
         {
             const string sql = @"
+IF EXISTS (
+    SELECT 1
+    FROM [User]
+    WHERE Email = @email
+        AND IsDeleted = 0
+)
+    THROW 51000, 'User already exists with that email.', 1;
+
 INSERT INTO [User] (
     UserGuid
     , Email
@@ -201,5 +227,6 @@ WHERE Token = @token
                 await con.ExecuteAsync(sql, new { token });
             }
         }
+
     }
 }

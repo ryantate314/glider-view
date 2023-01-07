@@ -6,7 +6,7 @@ import {
   HttpInterceptor,
   HTTP_INTERCEPTORS
 } from '@angular/common/http';
-import { iif, Observable, switchMap } from 'rxjs';
+import { iif, Observable, of, switchMap, take } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const IGNORE_AUTH_HEADER_NAME = "X-Ignore-Auth-Interceptor";
@@ -28,10 +28,12 @@ export class AuthInterceptor implements HttpInterceptor {
 
     // TODO: Implement auto refresh
     return this.auth.isAuthenticated$.pipe(
+      take(1),
       switchMap(isAuthenticated =>
         iif(
           () => isAuthenticated,
           this.auth.token$.pipe(
+            take(1),
             switchMap(token => {
               var clone = request.clone({
                 setHeaders: {
@@ -41,7 +43,10 @@ export class AuthInterceptor implements HttpInterceptor {
               return next.handle(clone);
             })
           ),
-          next.handle(request)
+          // Use of(true) to make next.handle a cold observable
+          of(true).pipe(
+            switchMap(() => next.handle(request))
+          )
         )
       )
     );

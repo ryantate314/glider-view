@@ -17,6 +17,7 @@ namespace GliderView.UnitTests
     public class UserServiceTests
     {
         private Mock<IUserRepository> _fakeUserRepository;
+        private Mock<IFlightRepository> _fakeFlightRepository;
         private Mock<ILogger<UserService>> _fakeLogger;
         private UserService _service;
 
@@ -24,12 +25,14 @@ namespace GliderView.UnitTests
         public void SetUp()
         {
             _fakeUserRepository = new Mock<IUserRepository>();
+            _fakeFlightRepository = new Mock<IFlightRepository>();
             _fakeLogger = new Mock<ILogger<UserService>>();
 
             _service = new UserService(
                 _fakeUserRepository.Object,
                 _fakeLogger.Object,
-                new PasswordHasher<User>()
+                new PasswordHasher<User>(),
+                _fakeFlightRepository.Object
             );
         }
 

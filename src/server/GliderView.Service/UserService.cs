@@ -15,15 +15,22 @@ namespace GliderView.Service
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UserService> _logger;
         private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IFlightRepository _flightRepo;
 
         private const int MAX_FAILED_LOGIN_ATTEMPTS = 10;
         private const int INVITATION_EXPIRATION_MINUTES = 60 * 24 * 7;
 
-        public UserService(IUserRepository userRepository, ILogger<UserService> logger, IPasswordHasher<User> passwordHasher)
+        public UserService(
+            IUserRepository userRepository,
+            ILogger<UserService> logger,
+            IPasswordHasher<User> passwordHasher,
+            IFlightRepository flightRepo
+        )
         {
             _userRepository = userRepository;
             _logger = logger;
             _passwordHasher = passwordHasher;
+            _flightRepo = flightRepo;
         }
 
         public async Task<User?> ValidateUsernameAndPassword(string email, string password)
@@ -176,5 +183,16 @@ namespace GliderView.Service
 
             return true;
         }
+
+        public Task<IEnumerable<User>> GetUsers()
+        {
+            return _userRepository.GetUsers();
+        }
+
+        public Task<List<LogBookEntry>> GetLogBook(Guid pilotId)
+        {
+            return _flightRepo.GetLogBook(pilotId);
+        }
+
     }
 }

@@ -58,8 +58,8 @@ namespace GliderView.API
 
             if (scopes != null)
             {
-                tokenDescriptor.Subject.AddClaims(
-                    scopes.Select(x => new Claim(x, ""))
+                tokenDescriptor.Subject.AddClaim(
+                    new Claim("Scopes", String.Join(',', scopes))
                 );
             };
 
@@ -88,8 +88,8 @@ namespace GliderView.API
 
             if (scopes != null)
             {
-                tokenDescriptor.Subject.AddClaims(
-                    scopes.Select(x => new Claim(x, ""))
+                tokenDescriptor.Subject.AddClaim(
+                    new Claim("Scopes", String.Join(',', scopes))
                 );
             };
 

@@ -15,6 +15,7 @@ namespace GliderView.Service.Repositories
         Task<Invitation?> GetInvitationByToken(string token);
         Task<User?> GetUser(Guid userId);
         Task<User?> GetUserByEmail(string email);
+        Task<IEnumerable<User>> GetUsers();
         Task UpdateFailedLoginAttempts(User user);
         Task UpdatePassword(User user);
     }

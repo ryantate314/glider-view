@@ -36,5 +36,16 @@ namespace GliderView.Data
 
             return table.AsTableValuedParameter("Waypoint");
         }
+
+        public static ICustomQueryParameter AsTableValuedParameter(this IEnumerable<Guid> guids)
+        {
+            var table = new DataTable();
+            table.Columns.Add("Id", typeof(Guid));
+
+            foreach (var id in guids)
+                table.Rows.Add(id);
+
+            return table.AsTableValuedParameter("IdList");
+        }
     }
 }

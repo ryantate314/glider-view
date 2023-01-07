@@ -1,10 +1,12 @@
 using GliderView.Data;
 using GliderView.Service;
+using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using NLog.Extensions.Logging;
@@ -41,6 +43,7 @@ namespace GliderView.API
                 {
                     policy.WithOrigins("http://localhost:4200")
                         .AllowCredentials()
+                        .AllowAnyMethod()
                         .AllowAnyHeader();
                 });
                 app.UseHangfireDashboard();
@@ -51,6 +54,8 @@ namespace GliderView.API
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseExceptionMiddleware();
 
             app.MapControllers();
 
@@ -138,9 +143,22 @@ namespace GliderView.API
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(Scopes.CreateUser, policy =>
-                    policy.RequireClaim(Scopes.CreateUser));
+                RegisterScopes(options);
             });
+        }
+
+        private static void RegisterScopes(AuthorizationOptions options)
+        {
+            foreach (var scope in Scopes.AllScopes)
+            {
+                options.AddPolicy(scope, policy =>
+                    policy.RequireAssertion(context =>
+                        context.User.HasClaim(claim => claim.Type == "Scopes"
+                            && claim.Value.Split(",").Contains(scope)
+                        )
+                    )
+                );
+            }
         }
     }
 }

@@ -20,6 +20,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
@@ -31,6 +33,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProfileComponent } from './components/profile/profile.component';
 import { ChangePasswordModalComponent } from './components/change-password-modal/change-password-modal.component';
 import { AUTH_INTERCEPTOR } from './interceptors/auth.interceptor';
+import { PilotsComponent } from './components/pilots/pilots.component';
+import { AddUserModalComponent } from './components/add-user-modal/add-user-modal.component';
+import { LogbookComponent } from './components/logbook/logbook.component';
 
 Chart.register(Annotation);
 
@@ -57,7 +62,10 @@ Marker.prototype.options.icon = iconDefault;
     FlightComponent,
     LoginComponent,
     ProfileComponent,
-    ChangePasswordModalComponent
+    ChangePasswordModalComponent,
+    PilotsComponent,
+    AddUserModalComponent,
+    LogbookComponent
   ],
   imports: [
     BrowserModule,
@@ -78,6 +86,8 @@ Marker.prototype.options.icon = iconDefault;
     MatMenuModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
+    MatSnackBarModule,
 
     NgChartsModule,
   ],

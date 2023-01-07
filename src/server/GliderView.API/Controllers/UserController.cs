@@ -21,7 +21,13 @@ namespace GliderView.API.Controllers
 
         private const string REFRESH_TOKEN_COOKIE = "X-Refresh-Token";
 
-        public UserController(UserService service, ILogger<UserController> logger, TokenGenerator tokenGenerator, TokenValidator tokenValidator, IConfiguration config)
+        public UserController(
+            UserService service,
+            ILogger<UserController> logger,
+            TokenGenerator tokenGenerator,
+            TokenValidator tokenValidator,
+            IConfiguration config
+        )
         {
             _service = service;
             _logger = logger;
@@ -47,10 +53,12 @@ namespace GliderView.API.Controllers
                 _tokenGenerator.GenerateRefreshToken(user)
             );
 
+            Token token = _tokenGenerator.GenerateAuthToken(user, Scopes.GetScopesForRole(user.Role));
+
             var userDto = new
             {
                 User = user,
-                Token = _tokenGenerator.GenerateAuthToken(user),
+                Token = token,
                 Scopes = Scopes.GetScopesForRole(user.Role)
             };
             return Ok(userDto);
@@ -84,7 +92,7 @@ namespace GliderView.API.Controllers
             var userDto = new
             {
                 User = user,
-                Token = _tokenGenerator.GenerateAuthToken(user),
+                Token = token,
                 Scopes = Scopes.GetScopesForRole(user.Role)
             };
             return Ok(userDto);
@@ -112,14 +120,23 @@ namespace GliderView.API.Controllers
 
         [HttpPost]
         [Authorize(Scopes.CreateUser)]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto user)
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            if (user == null || !ModelState.IsValid)
+            if (dto == null || !ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _service.CreateUser(user.Email!, user.Name!, user.Role!.Value);
+            User user = await _service.CreateUser(dto.Email!, dto.Name!, dto.Role!.Value);
 
             return Ok();
+        }
+
+        [HttpGet]
+        [Authorize(Scopes.ViewAllUsers)]
+        public async Task<IActionResult> GetAll()
+        {
+            IEnumerable<User> users = await _service.GetUsers();
+
+            return Ok(users);
         }
 
         [HttpGet("{userId}/invitation")]
@@ -205,6 +222,18 @@ namespace GliderView.API.Controllers
                 return Unauthorized();
 
             return Ok();
+        }
+
+        [HttpGet("{userId}/logbook")]
+        public async Task<IActionResult> GetLogbook([FromRoute] Guid? userId)
+        {
+            // TODO: Authorize this user to this UserId
+
+            userId = User.GetUserId()!.Value;
+
+            List<LogBookEntry> logEntries = await _service.GetLogBook(userId.Value);
+
+            return Ok(logEntries);
         }
     }
 }

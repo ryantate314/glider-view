@@ -90,6 +90,24 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
-        
+        [HttpPost("{flightId}/pilots")]
+        public async Task<IActionResult> AddPilot([FromRoute] Guid flightId, [FromQuery] Guid? pilotId)
+        {
+            if (pilotId == null)
+                pilotId = User.GetUserId();
+
+            await _flightService.AddPilot(flightId, pilotId!.Value);
+
+            return Ok();
+        }
+
+        [HttpDelete("{flightId}/pilots/{pilotId}")]
+        public async Task<IActionResult> AddPilot([FromRoute] Guid flightId, [FromRoute] Guid pilotId)
+        {
+            // TODO authorize this user to the user ID
+            await _flightService.RemovePilot(flightId, pilotId);
+
+            return Ok();
+        }
     }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, CanActivateChild, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { map, Observable, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -26,10 +26,27 @@ export class AuthGuard implements CanActivate, CanActivateChild {
 
   private isAuthenticated(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
     return this.auth.isAuthenticated$.pipe(
-      tap(isAuthenticated => {
+      switchMap(isAuthenticated => {
         if (!isAuthenticated) {
           this.router.navigate(['/']);
+          return of(false);
         }
+
+        // Authorize the user based on scopes required to view the page
+        if (route.data['scopes']) {
+          const scopes: string[] = route.data['scopes'];
+          return this.auth.scopes$.pipe(
+            map(userScopes => {
+              for (let scope of scopes)
+                if (!userScopes.some(x => x == scope))
+                  return false;
+
+              return true;
+            })
+          )
+        }
+
+        return of(true);
       })
     );
   }

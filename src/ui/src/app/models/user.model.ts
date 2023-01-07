@@ -20,3 +20,14 @@ export enum Scopes {
     ViewAllUsers = "user:viewall",
     CreateUser = "user:create"
 }
+
+export enum Roles {
+    Admin = "A",
+    User = "U"
+}
+
+export interface InvitationToken {
+    userId: string;
+    token: string;
+    expirationDate: Date;
+}

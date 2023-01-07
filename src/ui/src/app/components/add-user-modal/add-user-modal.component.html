@@ -1,0 +1,40 @@
+<h1 mat-dialog-title>Create User</h1>
+
+<form (submit)="onSubmit($event)" [formGroup]="form">
+    <div mat-dialog-content>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Email Address</mat-label>
+            <input matInput type="email" required="required" maxlength="100" formControlName="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Name</mat-label>
+            <input matInput type="text" required="required" maxlength="100" formControlName="name" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Role</mat-label>
+            <mat-select required="required">
+                <mat-option [value]="Roles.User">Pilot</mat-option>
+                <mat-option [value]="Roles.Admin">Admin</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <p class="text-danger" *ngIf="error">{{ error }}</p>
+        <p class="text-success" *ngIf="submitted">User Created</p>
+
+        <div *ngIf="token">
+            <p>Invitation Token: {{token.token}}</p>
+        </div>
+
+    </div>
+
+    <div mat-dialog-actions class="justify-content-end">
+        <button type="button" mat-raised-button (click)="onClose()">{{ submitted ? 'Close' : 'Cancel' }}</button>
+        <button type="submit" mat-raised-button color="primary" *ngIf="!submitted">Submit</button>
+        <button type="button" mat-raised-button *ngIf="submitted" (click)="resetForm()">Create Another</button>
+        <button type="button" mat-raised-button color="primary" *ngIf="submitted" (click)="generateInvitation()">Get Invitation Link</button>
+    </div>
+
+</form>

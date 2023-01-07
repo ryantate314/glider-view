@@ -1,0 +1,12 @@
+<div class="container pt-4">
+    <div class="d-flex">
+        <h1>Registered Pilots</h1>
+        <span class="flex-spacer"></span>
+        <button mat-raised-button (click)="createUser()">Create new User</button>
+    </div>
+    <ng-container *ngIf="users$ | async as users">
+        <div *ngFor="let user of users">
+            <p>{{ user.name }}</p>
+        </div>
+    </ng-container>
+</div>

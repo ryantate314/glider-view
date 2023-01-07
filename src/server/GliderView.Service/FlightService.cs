@@ -1,4 +1,5 @@
-﻿using GliderView.Service.Models;
+﻿using GliderView.Service.Exeptions;
+using GliderView.Service.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,15 @@ namespace GliderView.Service
         {
             _repo = repo;
             _analyzer = analyzer;
+        }
+
+        public async Task AddPilot(Guid flightId, Guid pilotId)
+        {
+            Flight? flight = await _repo.GetFlight(flightId);
+            if (flight == null)
+                throw new NotFoundException<Flight>(flightId);
+
+            await _repo.AddPilot(flightId, pilotId);
         }
 
         public async Task RecalculateStatistics(Guid flightId)
@@ -36,6 +46,11 @@ namespace GliderView.Service
             await _repo.UpsertFlightStatistics(flight);
 
             await _repo.UpdateFlightEvents(flight);
+        }
+
+        public Task RemovePilot(Guid flightId, Guid pilotId)
+        {
+            return _repo.RemovePilot(flightId, pilotId);
         }
     }
 }
