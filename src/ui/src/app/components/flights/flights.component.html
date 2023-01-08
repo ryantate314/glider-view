@@ -1,4 +1,4 @@
-<div class="container pb-4">
+<div class="container-md pb-4">
 
     <ng-container *ngIf="flights$ | async as flights; else loading">
 
@@ -29,8 +29,8 @@
             </div>
         </nav>
 
-        <!-- Heading -->
-        <div class="d-md-flex m-4">
+         <!-- Heading -->
+         <div class="d-md-flex m-4">
             <h1>Flights <span class="d-md-none">- {{ (date$ | async)?.toDate() | date: 'shortDate' }}</span></h1>
             <span class="flex-spacer"></span>
             <div>
@@ -46,41 +46,113 @@
                 <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
                     <mat-icon>add</mat-icon>
                 </button>
+                <!-- Display Mode -->
+                <button mat-icon-button title="Table View" (click)="setDisplayMode(DisplayMode.Table)" *ngIf="(displayMode$ | async) != DisplayMode.Table">
+                    <mat-icon>table_view</mat-icon>
+                </button>
+                <button mat-icon-button title="Card View" (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
+                    <mat-icon class="material-icons-outlined">view_agenda</mat-icon>
+                </button>
             </div>
             
         </div>
 
-        <mat-card *ngFor="let flight of flights" class="mb-4">
-            <mat-card-title>
-                <div class="d-flex justify-content-between">
-                    <a [routerLink]="['/flights', flight.flightId]" class="flight-title" *ngIf="flight.flightId">
-                        <h4>{{flight.aircraft?.description ?? "Unknown Glider"}} - {{flight.startDate | date: 'shortTime'}}</h4>
-                    </a>
-                    <span class="flight-title" *ngIf="!flight.flightId">
-                        <h4>Unknown Glider - {{flight.startDate | date: 'shortTime'}}</h4>
-                    </span>
-                    <button mat-icon-button [matMenuTriggerFor]="menu">
-                        <mat-icon>more_vert</mat-icon>
-                    </button>
-                    <mat-menu #menu="matMenu">
-                        <ng-container *ngIf="flight.flightId">
-                            <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="user$ | async as user">Add to Logbook</button>
-                            <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
-                        </ng-container>
-                        <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
-                    </mat-menu>
-                </div>
-                <div  *ngIf="flight.towFlight">
-                    <a mat-stroked-button [routerLink]="['/flights', flight.towFlight.flightId]" title="Tow Flight">{{ flight.towFlight.aircraft?.description ?? "Unknown Aircraft" }}</a>
-                </div>
-            </mat-card-title>
-            <mat-card-content>
-                
-                <span>Duration: {{ flight.duration != null ? formatDuration(flight.duration) : "Unknown" }}</span>
-                <span class="ms-3">Release Height: {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft MSL" : "Unknown" }}</span>
-            </mat-card-content>
-        </mat-card>
-        <p class="text-center" *ngIf="flights.length == 0">No flights on this date.</p>
+        <!-- Card View -->
+        <ng-container *ngIf="(displayMode$ | async) == DisplayMode.Card">
+            <mat-card *ngFor="let flight of flights" class="mb-4">
+                <mat-card-title>
+                    <div class="d-flex justify-content-between">
+                        <a [routerLink]="['/flights', flight.flightId]" class="flight-title" *ngIf="flight.flightId">
+                            <h4>{{flight.aircraft?.description ?? "Unknown Glider"}} - {{flight.startDate | date: 'shortTime'}}</h4>
+                        </a>
+                        <span class="flight-title" *ngIf="!flight.flightId">
+                            <h4>Unknown Glider - {{flight.startDate | date: 'shortTime'}}</h4>
+                        </span>
+                        <ng-container
+                            *ngTemplateOutlet="moreButton; context: { flight: flight }"
+                        ></ng-container>
+                    </div>
+                    <div  *ngIf="flight.towFlight">
+                        <a mat-stroked-button [routerLink]="['/flights', flight.towFlight.flightId]" title="Tow Flight">{{ flight.towFlight.aircraft?.description ?? "Unknown Aircraft" }}</a>
+                    </div>
+                </mat-card-title>
+                <mat-card-content>
+                    
+                    <span>Duration: {{ flight.duration != null ? formatDuration(flight.duration) : "Unknown" }}</span>
+                    <span class="ms-3">Release Height: {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft MSL" : "Unknown" }}</span>
+                </mat-card-content>
+            </mat-card>
+            <p class="text-center" *ngIf="flights.length == 0">No flights on this date.</p>
+        </ng-container>
+
+        <!-- Table View -->
+        <ng-container *ngIf="(displayMode$ | async) == DisplayMode.Table">
+            <div class="table-container mb-4">
+                <table mat-table
+                    [dataSource]="flights$"
+                    matSort
+                    (matSortChange)="onTableSortChange($event)"
+                    class="mat-elevation-z8 w-100"
+                >
+
+                    <!-- Takeoff Time Column -->
+                    <ng-container matColumnDef="time">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header [disableClear]="true" [start]="(sortDirection$ | async) ?? ''" sortActionDescription="Sort by time"> Time </th>
+                        <td mat-cell *matCellDef="let flight"> {{flight.startDate | date: 'shortTime'}} </td>
+                    </ng-container>
+
+                    <!-- Glider Description Column -->
+                    <ng-container matColumnDef="glider">
+                        <th mat-header-cell *matHeaderCellDef> Glider </th>
+                        <td mat-cell *matCellDef="let flight"> {{flight.aircraft?.description ?? "Unknown Glider"}} </td>
+                    </ng-container>
+
+                    <!-- Duration Column -->
+                    <ng-container matColumnDef="duration">
+                        <th mat-header-cell *matHeaderCellDef> Duration </th>
+                        <td mat-cell *matCellDef="let flight"> {{flight.duration != null ? formatDuration(flight.duration) : "Unknown"}} </td>
+                    </ng-container>
+
+                    <!-- Release Height Column -->
+                    <ng-container matColumnDef="releaseHeight">
+                        <th mat-header-cell *matHeaderCellDef> Release Height (MSL) </th>
+                        <td mat-cell *matCellDef="let flight"> {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft" : "Unknown" }} </td>
+                    </ng-container>
+
+                    <!-- Towplane Column -->
+                    <ng-container matColumnDef="towplane">
+                        <th mat-header-cell *matHeaderCellDef> Tow Plane </th>
+                        <td mat-cell *matCellDef="let flight" (click)="$event.stopPropagation()">
+                            <a mat-stroked-button [routerLink]="['/flights', flight.towFlight.flightId]" title="Tow Flight" *ngIf="flight.towFlight">{{ flight.towFlight.aircraft?.description ?? "Unknown Aircraft" }}</a>
+                        </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef> &nbsp; </th>
+                        <td mat-cell *matCellDef="let flight" style="width: 2em;" (click)="$event.stopPropagation()">
+                            <ng-container
+                                *ngTemplateOutlet="moreButton; context: { flight: flight }"
+                            ></ng-container>
+                        </td>
+                    </ng-container>
+                    
+
+                    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                    <tr mat-row *matRowDef="let row; let even = even; columns: columns;"
+                        [class.clickable]="row.flightId"
+                        [routerLink]="row.flightId ? ['/flights', row.flightId] : null"
+                        [class.accent]="even"
+                    ></tr>
+
+                    <tr class="mat-row" *matNoDataRow>
+                        <td class="mat-cell" [attr.colspan]="columns.length">
+                          No flights on this date.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ng-container>
 
         <button mat-fab id="navigate-day-back-button" class="d-md-none" (click)="navigateDayBackward()">
             <mat-icon>chevron_left</mat-icon>
@@ -95,4 +167,17 @@
     <div class="mt-4">
         <mat-spinner style="margin-left: auto; margin-right: auto;"></mat-spinner>
     </div>
+</ng-template>
+
+<ng-template #moreButton let-flight="flight">
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+        <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+        <ng-container *ngIf="flight.flightId">
+            <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="user$ | async as user">Add to Logbook</button>
+            <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+        </ng-container>
+        <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
+    </mat-menu>
 </ng-template>

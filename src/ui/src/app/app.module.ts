@@ -22,6 +22,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
@@ -88,6 +90,8 @@ Marker.prototype.options.icon = iconDefault;
     MatInputModule,
     MatSelectModule,
     MatSnackBarModule,
+    MatTableModule,
+    MatSortModule,
 
     NgChartsModule,
   ],

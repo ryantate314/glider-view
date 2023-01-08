@@ -1,6 +1,6 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, tap, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -13,6 +13,9 @@ import { SettingsService } from 'src/app/services/settings.service';
 import { User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatSort, Sort } from '@angular/material/sort';
+import { DisplayMode } from 'src/app/models/display-mode';
 
 interface WeekDay {
   abbreviation: string;
@@ -29,6 +32,7 @@ interface WeekDay {
 })
 export class FlightsComponent implements OnInit, AfterViewInit {
 
+  /** An array of all flights in the current week. This prevents making an API call when changing dates with in the same week. */
   private allFlights$: Observable<Flight[]>;
   public date$: Observable<moment.Moment>;
   public flights$: Observable<Flight[]>;
@@ -39,6 +43,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
 
+  public columns: string[] = ['time', 'glider', 'releaseHeight', 'duration', 'towplane', 'actions'];
+
+  public displayMode$ = new ReplaySubject<DisplayMode>(1);
+
+  readonly DisplayMode = DisplayMode;
+
   constructor(
     private flightService: FlightService,
     private route: ActivatedRoute,
@@ -48,6 +58,15 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private auth: AuthService,
     private admiralSnackbar: MatSnackBar
   ) {
+
+    this.sortDirection$.next(
+      this.settings.flightSortOrder
+    );
+
+    this.displayMode$.next(
+      this.settings.displayMode
+    );
+
     this.date$ = this.route.params.pipe(
       map(params => {
         let date = moment().startOf('day');
@@ -144,10 +163,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       map(([flights, date]) => this.groupFlightsIntoDays(date, flights))
     );
 
-    this.sortDirection$.next(
-      this.settings.flightSortOrder
-    );
-
     this.user$ = this.auth.user$;
   }
 
@@ -179,7 +194,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-
   }
 
   refreshFlights() {
@@ -223,6 +237,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
           .startOf('isoWeek')
           .subtract(1, 'day'))
     );
+  }
+
+  debugRow(row: any) {
+    console.log(row);
   }
 
 
@@ -274,8 +292,20 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     this.sortDirection$.next('asc');
   }
 
+  onTableSortChange(sortState: Sort) {
+    if (sortState.direction != '') {
+      this.settings.flightSortOrder = sortState.direction;
+      this.sortDirection$.next(sortState.direction);
+    }
+  }
+
   public mToFt(value: number | undefined | null): number | null {
     return UnitUtils.mToFt(value);
+  }
+
+  public setDisplayMode(mode: DisplayMode) {
+    this.displayMode$.next(mode);
+    this.settings.displayMode = mode;
   }
 
   public addToLogbook(flight: Flight, user: User) {
