@@ -217,7 +217,7 @@ export class FlightComponent implements OnInit, AfterViewInit {
 
     if (releasePoint)
       leaflet.marker([releasePoint.latitude, releasePoint.longitude])
-        .bindPopup("Release: " + this.mToFt(releasePoint.gpsAltitude - flight.waypoints![0].gpsAltitude) + "ft AGL")
+        .bindPopup("Release: " + this.mToFt(releasePoint.gpsAltitude) + "ft MSL")
         .addTo(this.map);
   }
 

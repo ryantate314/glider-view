@@ -5,6 +5,7 @@ import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
 import { MatDialog } from '@angular/material/dialog';
+import { UnitUtils } from 'src/app/unit-utils';
 
 import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
 import * as moment from 'moment';
@@ -274,9 +275,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   public mToFt(value: number | undefined | null): number | null {
-    return !value
-      ? null
-      : Math.round(value! * 3.281);
+    return UnitUtils.mToFt(value);
   }
 
   public addToLogbook(flight: Flight, user: User) {

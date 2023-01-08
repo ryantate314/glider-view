@@ -5,6 +5,7 @@ import { LogBookEntry } from 'src/app/models/flight.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { FlightService } from 'src/app/services/flight.service';
 import { UserService } from 'src/app/services/user.service';
+import { UnitUtils } from 'src/app/unit-utils';
 
 const sortEntries = (a: LogBookEntry, b: LogBookEntry) =>
   (a.flightNumber == null || b.flightNumber == null)
@@ -78,6 +79,10 @@ export class LogbookComponent implements OnInit {
       this.refresh$.next();
     })
     
+  }
+
+  public mToFt(value: number | undefined | null): number | null {
+    return UnitUtils.mToFt(value);
   }
 
 }

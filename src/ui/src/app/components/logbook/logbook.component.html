@@ -11,7 +11,7 @@
                         <th>Flight No.</th>
                         <th>Type of Glider</th>
                         <th>License No.</th>
-                        <th colspan="2">Altitude</th>
+                        <th colspan="2">Altitude (ft MSL)</th>
                         <th>Location</th>
                         <th colspan="2">Total Time</th>
                         <th>Remarks</th>
@@ -47,8 +47,8 @@
                         <td>{{ entry.flight.aircraft?.description }}</td>
                         <td>{{ entry.flight.aircraft?.registrationId }}</td>
                         <!-- Altitude -->
-                        <td>{{ entry.flight.statistics?.releaseHeight }}</td>
-                        <td>{{ entry.flight.statistics?.maxAltitude }}</td>
+                        <td>{{ mToFt(entry.flight.statistics?.releaseHeight) }}</td>
+                        <td>{{ mToFt(entry.flight.statistics?.maxAltitude) }}</td>
 
                         <td title="Chilhowee Gliderport">92A</td>
 

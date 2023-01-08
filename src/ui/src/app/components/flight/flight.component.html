@@ -12,10 +12,10 @@
             </h4>
             <p *ngIf="!flight.statistics">No statistics available for this flight.</p>
             <div *ngIf="flight.statistics">
-                <div>Max Altitude: {{ flight.statistics.maxAltitude !== null ? mToFt(flight.statistics!.maxAltitude) + "ft" : "Unknown" }}</div>
+                <div>Max Altitude: {{ flight.statistics.maxAltitude !== null ? mToFt(flight.statistics!.maxAltitude) + "ft MSL" : "Unknown" }}</div>
                 <div>Distance Traveled: {{ flight.statistics.distanceTraveled !== null ? kmToM(flight.statistics!.distanceTraveled) + "km" : "Unknown" }}</div>
-                <div>Release Height: {{ flight.statistics.releaseHeight !== null ? mToFt(flight.statistics!.releaseHeight) + "ft" : "Unknown" }}</div>
-                <div>Pattern Entry Altitude: {{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft" : "Unknown" }}</div>
+                <div>Release Height: {{ flight.statistics.releaseHeight !== null ? mToFt(flight.statistics!.releaseHeight) + "ft MSL" : "Unknown" }}</div>
+                <div>Pattern Entry Altitude: {{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft MSL" : "Unknown" }}</div>
             </div>
         </div>
     </ng-container>
