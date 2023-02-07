@@ -102,7 +102,11 @@ export class FlightService {
     return {
       ...flight,
       startDate: new Date(flight.startDate + "Z"),
-      endDate: new Date(flight.endDate + "Z")
+      endDate: new Date(flight.endDate + "Z"),
+      waypoints: flight.waypoints == null ? null : flight.waypoints.map(waypoint => ({
+        ...waypoint,
+        time: new Date(waypoint.time + "Z")
+      }))
     };
   }
 }

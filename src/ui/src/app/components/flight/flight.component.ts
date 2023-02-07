@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { combineLatest, map, merge, Observable, shareReplay, Subject, switchMap, withLatestFrom } from 'rxjs';
-import { Flight, FlightEventType } from 'src/app/models/flight.model';
+import { Flight, FlightEventType, Waypoint } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as leaflet from 'leaflet';
 import { ChartData, ChartOptions } from 'chart.js';
@@ -34,6 +34,14 @@ const baseChartOptions: ChartOptions<'line'> = {
         display: true,
         text: "Altitude (ft MSL)"
       },
+      position: "left"
+    },
+    y1: {
+      title: {
+        display: true,
+        text: "Vertical Speed (kts)"
+      },
+      position: "right"
     },
     x: {
       ticks: {
@@ -98,7 +106,13 @@ export class FlightComponent implements OnInit, AfterViewInit {
           datasets: [{
             label: 'Altitude',
             data: flight.waypoints!.map(x => this.mToFt(x.gpsAltitude)!),
-            showLine: true
+            showLine: true,
+            yAxisID: "y"
+          }, {
+            label: 'Vertical Speed',
+            data: this.calculateVerticalSpeed(flight.waypoints!),
+            showLine: true,
+            yAxisID: "y1"
           }]
         };
         return data;
@@ -223,6 +237,17 @@ export class FlightComponent implements OnInit, AfterViewInit {
 
   public recalculateStatistics() {
     this.updateStatistics$.next();
+  }
+
+  private calculateVerticalSpeed(waypoints: Waypoint[]): number[] {
+    // Add empty first value to account for the offset
+    const data = [0];
+    for (let i = 1; i < waypoints.length; i++) {
+      // kts
+      const speed = (waypoints[i].gpsAltitude - waypoints[i - 1].gpsAltitude) / (waypoints[i].time.getTime() - waypoints[i - 1].time.getTime()) * 1000.0 * 1.94384;
+      data.push(speed);
+    }
+    return data;
   }
 
 }
