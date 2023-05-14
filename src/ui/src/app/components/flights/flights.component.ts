@@ -310,7 +310,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   public addToLogbook(flight: Flight, user: User) {
     this.flightService.addPilot(flight.flightId!, user.userId).subscribe(() => {
-      this.admiralSnackbar.open("Flight added to your logbook.");
+      this.admiralSnackbar.open("Flight added to your logbook.", "Close", {
+        duration: 3000
+      });
     });
   }
 }

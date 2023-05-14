@@ -10,22 +10,22 @@ import { UserService } from './user.service';
 })
 export class AuthService {
 
-  private _token$ = new ReplaySubject<Token>();
+  private _token$ = new ReplaySubject<Token>(1);
   public get token$(): Observable<Token> {
     return this._token$;
   }
 
-  private _user$ = new ReplaySubject<User | null>();
+  private _user$ = new ReplaySubject<User | null>(1);
   public get user$(): Observable<User | null> {
     return this._user$;
   }
 
-  private _scopes$ = new ReplaySubject<string[]>();
+  private _scopes$ = new ReplaySubject<string[]>(1);
   public get scopes$(): Observable<string[]> {
     return this._scopes$;
   }
 
-  private _isAuthenticated$ = new ReplaySubject<boolean>();
+  private _isAuthenticated$ = new ReplaySubject<boolean>(1);
   public get isAuthenticated$(): Observable<boolean> {
     return this._isAuthenticated$;
   }

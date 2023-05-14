@@ -11,7 +11,7 @@ import { LineAnnotationOptions } from 'chartjs-plugin-annotation';
 const baseChartOptions: ChartOptions<'line'> = {
   plugins: {
     legend: {
-      display: false
+      display: true
     },
     title: {
       display: true,
