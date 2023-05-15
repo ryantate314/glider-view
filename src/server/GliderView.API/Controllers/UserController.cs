@@ -127,7 +127,16 @@ namespace GliderView.API.Controllers
 
             User user = await _service.CreateUser(dto.Email!, dto.Name!, dto.Role!.Value);
 
-            return Ok();
+            return Ok(user);
+        }
+
+        [HttpDelete("{userId}")]
+        [Authorize(Scopes.CreateUser)]
+        public async Task<IActionResult> DeleteUser([FromRoute] Guid userId)
+        {
+            await _service.DeleteUser(userId);
+
+            return NoContent();
         }
 
         [HttpGet]

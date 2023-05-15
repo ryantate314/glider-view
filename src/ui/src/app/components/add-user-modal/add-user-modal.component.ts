@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
-import { InvitationToken, Roles, User } from 'src/app/models/user.model';
+import { InvitationToken, Role, User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user.service';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-add-user-modal',
@@ -12,10 +13,10 @@ import { UserService } from 'src/app/services/user.service';
 export class AddUserModalComponent implements OnInit {
 
   public form: FormGroup;
-  public Roles = Roles;
+  public Roles = Role;
 
   private user: User | null = null;
-  public token: InvitationToken | null = null;
+  public token: string | null = null;
 
   public submitted: boolean = false;
 
@@ -24,12 +25,13 @@ export class AddUserModalComponent implements OnInit {
   constructor(
     fb: FormBuilder,
     private userService: UserService,
-    private matDialogRef: MatDialogRef<AddUserModalComponent>
+    private matDialogRef: MatDialogRef<AddUserModalComponent>,
+    private location: Location
   ) {
     this.form = fb.group({
       'name': [],
       'email': [],
-      'role': [Roles.User, []]
+      'role': [Role.User, []]
     });
   }
 
@@ -71,7 +73,7 @@ export class AddUserModalComponent implements OnInit {
   generateInvitation() {
     this.userService.getInvitationToken(this.user!.userId)
       .subscribe(token => {
-        this.token = token;
+        this.token = window.location.origin + this.location.prepareExternalUrl(`welcome/${token.token}`);
       });
   }
 

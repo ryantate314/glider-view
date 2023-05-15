@@ -4,13 +4,14 @@ import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { IGNORE_AUTH_HEADER } from '../interceptors/auth.interceptor';
 import { LogBookEntry } from '../models/flight.model';
-import { InvitationToken, Roles, User, UserLogin } from '../models/user.model';
+import { InvitationToken, Role, User, UserLogin } from '../models/user.model';
 import { FlightService } from './flight.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
+  
   constructor(private http: HttpClient) { }
 
   public logIn(email: string, password: string): Observable<UserLogin> {
@@ -65,7 +66,7 @@ export class UserService {
     );
   }
 
-  createUser(email: string, name: string, role: Roles): Observable<User> {
+  createUser(email: string, name: string, role: Role): Observable<User> {
     return this.http.post<User>(
       `${environment.apiUrl}/users`,
       {
@@ -84,6 +85,39 @@ export class UserService {
         ...token,
         expirationDate: new Date(token.expirationDate)
       }))
+    );
+  }
+
+  validateInvitationToken(email: string, token: string): Observable<void> {
+    return this.http.put<void>(
+      `${environment.apiUrl}/users/validate-invitation`,
+      {
+        token,
+        email
+      }
+    );
+  }
+
+  /**
+   * Finish building out a user after validating their invitation token.
+   * @param value 
+   * @param value1 
+   * @param arg2 
+   */
+  buildUser(email: string, password: string, token: string): Observable<UserLogin> {
+    return this.http.post<UserLogin>(
+      `${environment.apiUrl}/users/onboarding`,
+      {
+        email,
+        password,
+        token
+      }
+    );
+  }
+
+  deleteUser(userId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/users/${userId}`
     );
   }
 

@@ -5,8 +5,30 @@
         <button mat-raised-button (click)="createUser()">Create new User</button>
     </div>
     <ng-container *ngIf="users$ | async as users">
-        <div *ngFor="let user of users">
-            <p>{{ user.name }}</p>
-        </div>
+        <table class="table table-striped">
+            <thead>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>&nbsp;</th>
+            </thead>
+            <tbody>
+                <tr *ngFor="let user of users">
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role == 'A' ? 'Admin' : 'Pilot' }}</td>
+                    <td>
+                        <button mat-icon-button [matMenuTriggerFor]="menu">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #menu="matMenu">
+                            <button mat-menu-item (click)="onEditUser(user)">Edit</button>
+                            <button mat-menu-item (click)="onDeleteUser(user)">Delete</button>
+                        </mat-menu>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
     </ng-container>
 </div>

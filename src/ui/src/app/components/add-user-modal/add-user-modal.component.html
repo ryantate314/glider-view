@@ -25,7 +25,11 @@
         <p class="text-success" *ngIf="submitted">User Created</p>
 
         <div *ngIf="token">
-            <p>Invitation Token: {{token.token}}</p>
+            <p>Invitation Token:</p>
+            <div class="text-center">
+                <a href="{{ token }}">{{ token }}</a>
+                <qrcode [qrdata]="token" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
+            </div>
         </div>
 
     </div>

@@ -4,7 +4,7 @@
     </a>
     <div class="d-none d-sm-block">
         <a mat-button *ngIf="canViewAllUsers$ | async" [routerLink]="['/pilots']">Pilots</a>
-        <a href="/igc-files/" target="_blank" mat-button>IGC File Repository</a>
+        <a *ngIf="canViewAllUsers$ | async" href="/igc-files/" target="_blank" mat-button>IGC File Repository</a>
     </div>
 
     <span class="flex-spacer"></span>

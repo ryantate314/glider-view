@@ -14,6 +14,7 @@ export interface User {
     userId: string;
     email: string;
     name: string;
+    role: Role;
 }
 
 export enum Scopes {
@@ -21,7 +22,7 @@ export enum Scopes {
     CreateUser = "user:create"
 }
 
-export enum Roles {
+export enum Role {
     Admin = "A",
     User = "U"
 }

@@ -11,6 +11,7 @@ namespace GliderView.Service.Repositories
     {
         Task CreateInvitation(Invitation invite);
         Task CreateUser(User user);
+        Task DeleteUser(Guid userId);
         Task DeleteInvitation(string token);
         Task<Invitation?> GetInvitationByToken(string token);
         Task<User?> GetUser(Guid userId);

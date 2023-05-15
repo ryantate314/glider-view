@@ -38,6 +38,8 @@ import { AUTH_INTERCEPTOR } from './interceptors/auth.interceptor';
 import { PilotsComponent } from './components/pilots/pilots.component';
 import { AddUserModalComponent } from './components/add-user-modal/add-user-modal.component';
 import { LogbookComponent } from './components/logbook/logbook.component';
+import { WelcomeComponent } from './components/welcome/welcome.component';
+import { QRCodeModule } from 'angularx-qrcode';
 
 Chart.register(Annotation);
 
@@ -67,7 +69,8 @@ Marker.prototype.options.icon = iconDefault;
     ChangePasswordModalComponent,
     PilotsComponent,
     AddUserModalComponent,
-    LogbookComponent
+    LogbookComponent,
+    WelcomeComponent
   ],
   imports: [
     BrowserModule,
@@ -76,6 +79,7 @@ Marker.prototype.options.icon = iconDefault;
     NgbModule,
     BrowserAnimationsModule,
     ReactiveFormsModule,
+    QRCodeModule,
 
     MatCardModule,
     MatToolbarModule,

@@ -1,0 +1,25 @@
+<div class="container">
+    <h1>Welcome to Chilhowee!</h1>
+    <p>Enter the email address associated with your invitation, and choose a password to log into the site.</p>
+    <form (submit)="onSubmit($event)" [formGroup]="form">
+        <mat-form-field appearance="fill">
+            <mat-label>Email Address</mat-label>
+            <input matInput type="email" required="required" maxlength="100" formControlName="email" />
+        </mat-form-field>
+    
+        <mat-form-field appearance="fill">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" required="required" maxlength="100" formControlName="password" />
+        </mat-form-field>
+    
+        <mat-form-field appearance="fill">
+            <mat-label>Confirm Password</mat-label>
+            <input matInput type="password" required="required" maxlength="100" formControlName="confirmPassword" />
+        </mat-form-field>
+    
+        <button type="submit" mat-raised-button color="primary">Submit</button>
+
+        <p class="mt-4 alert alert-danger" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </form>
+</div>
+

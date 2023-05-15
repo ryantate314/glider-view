@@ -77,6 +77,7 @@ namespace GliderView.Service
         {
             var user = new User()
             {
+                UserId = Guid.NewGuid(),
                 Email = email,
                 Name = name,
                 Role = role
@@ -114,7 +115,7 @@ namespace GliderView.Service
             }
 
             User user = (await _userRepository.GetUser(invite.UserId))!;
-            if (!String.Equals(email, user.Email))
+            if (!String.Equals(email, user.Email, StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation($"Email address does not match for token {invitation.Token}: {email}");
                 throw new InvalidOperationException("Token is not valid.");
@@ -194,5 +195,9 @@ namespace GliderView.Service
             return _flightRepo.GetLogBook(pilotId);
         }
 
+        public Task DeleteUser(Guid userId)
+        {
+            return _userRepository.DeleteUser(userId);
+        }
     }
 }

@@ -117,7 +117,6 @@ VALUES (
         public async Task CreateInvitation(Invitation invite)
         {
             const string sql = @"
-
 DECLARE @userId INT = (
     SELECT
         U.UserId
@@ -144,6 +143,8 @@ BEGIN TRY
         , @token
         , @expirationDate
     )
+
+    COMMIT TRAN;
 
 END TRY
 BEGIN CATCH
@@ -189,6 +190,7 @@ WHERE I.Token = @token
 UPDATE dbo.[User]
     SET FailedLoginAttempts = @failedLoginAttempts
         , IsLocked = @isLockedOut
+        , ModifiedDate = CURRENT_TIMESTAMP
     WHERE UserGuid = @userId
         AND IsDeleted = 0;
 ";
@@ -205,6 +207,7 @@ UPDATE dbo.[User]
     SET HashedPassword = @hashedPassword
         , FailedLoginAttempts = 0
         , IsLocked = 0
+        , ModifiedDate = CURRENT_TIMESTAMP
 WHERE UserGuid = @userId
     AND IsDeleted = 0;
 ";
@@ -228,5 +231,19 @@ WHERE Token = @token
             }
         }
 
+        public async Task DeleteUser(Guid userId)
+        {
+            const string sql = @"
+UPDATE dbo.[User]
+    SET IsDeleted = 1
+    , ModifiedDate = CURRENT_TIMESTAMP
+WHERE UserGuid = @userId
+    AND IsDeleted = 0;
+";
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, new { userId });
+            }
+        }
     }
 }
