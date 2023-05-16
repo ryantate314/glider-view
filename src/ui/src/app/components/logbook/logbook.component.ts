@@ -82,7 +82,9 @@ export class LogbookComponent implements OnInit {
   }
 
   public mToFt(value: number | undefined | null): number | null {
-    return UnitUtils.mToFt(value);
+    return value ?
+      Math.round(UnitUtils.mToFt(value)!)
+      : null;
   }
 
 }

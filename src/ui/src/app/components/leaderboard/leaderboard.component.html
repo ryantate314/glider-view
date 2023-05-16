@@ -1,0 +1,63 @@
+<div class="container">
+    <h1>Leaderboard</h1>
+    <mat-form-field appearance="fill">
+        <mat-label>Choose a date</mat-label>
+        <input matInput [matDatepicker]="picker" [value]="date$ | async" (dateChange)="onDateChange($event)" />
+        <mat-hint>MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+    <div *ngIf="leaderboard$ | async as leaderboard; else loading">
+        <h2>Today</h2>
+        <p>Total flights: {{leaderboard.numFlightsToday}}</p>
+        <ng-container
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsToday, longestDuration: leaderboard.longestDurationFlightsToday }"
+        ></ng-container>
+        <h2>Month</h2>
+        <p>Total flights: {{leaderboard.numFlightsThisMonth}}</p>
+        <ng-container
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsThisMonth, longestDuration: leaderboard.longestDurationFlightsThisMonth }"
+        ></ng-container>
+        <h2>Year</h2>
+        <p>Total flights: {{leaderboard.numFlightsThisYear}}</p>
+        <ng-container
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsThisYear, longestDuration: leaderboard.longestDurationFlightsThisYear }"
+        ></ng-container>
+    </div>
+
+    <ng-template #loading>
+        <mat-spinner></mat-spinner>
+    </ng-template>
+
+    <ng-template #flightsData let-longestLength="longestLength" let-longestDuration="longestDuration">
+        <div class="row">
+            <div class="col-lg-6">
+                <h5>Longest Time Aloft</h5>
+                <p *ngIf="longestDuration.length == 0">No flights to display.</p>
+                <table class="table table-hover" *ngIf="longestDuration.length > 0">
+                    <tbody>
+                        <tr *ngFor="let flight of longestDuration; let i = index" class="clickable-row" (click)="onFlightClick(flight)">
+                            <td>{{ i + 1}}.</td>
+                            <td>{{formatDuration(flight.duration)}}</td>
+                            <td>{{flight.aircraft?.description ?? "Unknown Glider"}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+            </div>
+            <div class="col-lg-6">
+                <h5>Longest Distance Traveled</h5>
+                <p *ngIf="longestLength.length == 0">No flights to display.</p>
+                <table class="table table-hover" *ngIf="longestLength.length > 0">
+                    <tbody>
+                        <tr *ngFor="let flight of longestLength; let i = index" class="clickable-row" (click)="onFlightClick(flight)">
+                            <td>{{ i + 1}}.</td>
+                            <td>{{formatDistance(flight.statistics!.distanceTraveled)}}</td>
+                            <td>{{flight.aircraft?.description ?? "Unknown Glider"}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ng-template>
+</div>

@@ -2,6 +2,9 @@ export interface Flight {
     flightId: string | null;
     startDate: Date;
     endDate: Date | null;
+    /**
+     * Seconds
+     */
     duration: number | null;
     igcFileName: string | null;
     
@@ -32,7 +35,13 @@ export enum FlightEventType {
 }
 
 export interface Statistics {
+    /**
+     * Meters
+     */
     distanceTraveled: number | null;
+    /**
+     * Meters MSL
+     */
     releaseHeight: number | null;
     altitudeGained: number | null;
     maxAltitude: number | null;

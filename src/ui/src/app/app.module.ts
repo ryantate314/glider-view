@@ -24,6 +24,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
@@ -40,6 +42,7 @@ import { AddUserModalComponent } from './components/add-user-modal/add-user-moda
 import { LogbookComponent } from './components/logbook/logbook.component';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { QRCodeModule } from 'angularx-qrcode';
+import { LeaderboardComponent } from './components/leaderboard/leaderboard.component';
 
 Chart.register(Annotation);
 
@@ -70,7 +73,8 @@ Marker.prototype.options.icon = iconDefault;
     PilotsComponent,
     AddUserModalComponent,
     LogbookComponent,
-    WelcomeComponent
+    WelcomeComponent,
+    LeaderboardComponent
   ],
   imports: [
     BrowserModule,
@@ -96,6 +100,8 @@ Marker.prototype.options.icon = iconDefault;
     MatSnackBarModule,
     MatTableModule,
     MatSortModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
 
     NgChartsModule,
   ],

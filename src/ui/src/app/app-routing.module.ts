@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { FlightComponent } from './components/flight/flight.component';
 import { FlightsComponent } from './components/flights/flights.component';
+import { LeaderboardComponent } from './components/leaderboard/leaderboard.component';
 import { LogbookComponent } from './components/logbook/logbook.component';
 import { PilotsComponent } from './components/pilots/pilots.component';
 import { ProfileComponent } from './components/profile/profile.component';
@@ -24,7 +25,9 @@ const routes: Routes = [
     data: {
       scopes: [Scopes.ViewAllUsers]
     }
-  }
+  },
+  { path: 'leaderboard', component: LeaderboardComponent, canActivate: [AuthGuard] },
+  { path: 'leaderboard/:date', component: LeaderboardComponent, canActivate: [AuthGuard] },
 ];
 
 @NgModule({

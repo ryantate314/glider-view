@@ -175,6 +175,7 @@ export class FlightComponent implements OnInit, AfterViewInit {
     return !value ? null : Math.round(value * 3.281);
   }
 
+  // Kilometers to nautical miles
   public kmToM(value: number | undefined | null): number | null {
     if (value === null || value === undefined)
       return null;
