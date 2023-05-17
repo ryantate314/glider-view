@@ -16,6 +16,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort, Sort } from '@angular/material/sort';
 import { DisplayMode } from 'src/app/models/display-mode';
+import { TitleService } from 'src/app/services/title.service';
 
 interface WeekDay {
   abbreviation: string;
@@ -56,7 +57,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private router: Router,
     private settings: SettingsService,
     private auth: AuthService,
-    private admiralSnackbar: MatSnackBar
+    private admiralSnackbar: MatSnackBar,
+    private title: TitleService
   ) {
 
     this.sortDirection$.next(
@@ -190,7 +192,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    
+    this.date$.pipe(
+      map(date => date.isSame(moment(), 'day') ?
+        'Flights'
+        : `Flights - ${date.format('M/D/YYYY')}`)
+    ).subscribe(title =>
+      this.title.setTitle(title)
+    );
   }
 
   ngAfterViewInit(): void {

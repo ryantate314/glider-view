@@ -8,6 +8,7 @@ import { Leaderboard } from 'src/app/models/leaderboard.model';
 import { LeaderboardService } from 'src/app/services/leaderboard.service';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { UnitUtils } from 'src/app/unit-utils';
+import { TitleService } from 'src/app/services/title.service';
 
 @Component({
   selector: 'app-leaderboard',
@@ -23,7 +24,8 @@ export class LeaderboardComponent implements OnInit {
     private readonly flightService: FlightService,
     private readonly leaderboardService: LeaderboardService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly title: TitleService
   ) {
     this.date$ = this.route.paramMap.pipe(
       map(params => params.get('date') ?
@@ -31,6 +33,7 @@ export class LeaderboardComponent implements OnInit {
         : new Date()
       )
     );
+
     this.leaderboard$ = this.date$.pipe(
       switchMap(date => this.leaderboardService.getLeaderboard(date)),
       shareReplay(1)
@@ -38,6 +41,7 @@ export class LeaderboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.title.setTitle("Leaderboard");
   }
 
   public onDateChange(event: MatDatepickerInputEvent<Date>) {
