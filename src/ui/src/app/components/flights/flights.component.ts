@@ -98,7 +98,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
           date.toDate(),
           date.clone()
             .endOf('isoWeek')
-            .toDate())
+            .toDate(),
+          FlightService.INCLUDE_STATISTICS)
       ),
       tap(_ => {
         this.isLoading$.next(false);

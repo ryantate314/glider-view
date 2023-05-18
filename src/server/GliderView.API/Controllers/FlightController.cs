@@ -10,17 +10,40 @@ namespace GliderView.API.Controllers
     public class FlightController : Controller
     {
         private const string INCLUDE_WAYPOINTS = "waypoints";
+        private const string INCLUDE_STATISTICS = "statistics";
 
         [Obsolete]
         private readonly IFlightRepository _flightRepo;
         private readonly IIgcFileRepository _igcRepo;
         private readonly FlightService _flightService;
+        private readonly IncludeHandler<Flight> _includeHandler;
 
-        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService)
+        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService, ILogger<FlightController> logger)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
             _flightService = flightService;
+
+            _includeHandler = new IncludeHandler<Flight>(logger)
+                .AddHandler(x => x.Waypoints, config =>
+                {
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Waypoints = await _flightRepo.GetWaypoints(flight.FlightId);
+                    config.MultipleUpdateFunction = flights => throw new InvalidOperationException("Retrieving waypoints for multiple flights is not supported.");
+                })
+                .AddHandler(x => x.Statistics, config =>
+                {
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Statistics = await _flightRepo.GetStatistics(flight.FlightId);
+                    config.MultipleUpdateFunction = async flights =>
+                    {
+                        var stats = await _flightRepo.GetStatistics(flights.Select(x => x.FlightId));
+
+                        foreach (var flight in flights)
+                            if (stats.ContainsKey(flight.FlightId))
+                                flight.Statistics = stats[flight.FlightId];
+                    };
+                });
         }
 
         [HttpGet]
@@ -30,6 +53,9 @@ namespace GliderView.API.Controllers
                 return BadRequest(ModelState);
 
             List<Flight> flights = await _flightRepo.GetFlights(search);
+
+            await _includeHandler.AddIncludedProperties(flights, search.Includes);
+           
             return Ok(flights);
         }
 
@@ -44,14 +70,7 @@ namespace GliderView.API.Controllers
             if (flight == null)
                 return NotFound();
 
-            if (!String.IsNullOrEmpty(includes))
-            {
-                var include = includes.Split(",");
-                if (include.Contains(INCLUDE_WAYPOINTS, StringComparer.InvariantCultureIgnoreCase))
-                {
-                    flight.Waypoints = await _flightRepo.GetWaypoints(flightId);
-                }
-            }
+            await _includeHandler.AddIncludedProperties(flight, includes);
 
             return Ok(flight);
         }

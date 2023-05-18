@@ -95,7 +95,11 @@ export class FlightComponent implements OnInit, AfterViewInit {
       updateStatsRequest$
     ).pipe(
       withLatestFrom(flightId$),
-      switchMap(([_, flightId]) => this.flightService.getFlight(flightId)),
+      switchMap(([_, flightId]) =>
+        this.flightService.getFlight(
+          flightId,
+          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_WAYPOINTS}`)
+        ),
       shareReplay(1)
     );
 

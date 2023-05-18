@@ -17,6 +17,8 @@ namespace GliderView.Service
         Task<Flight?> GetFlight(Guid flightId);
         Task<List<Flight>> GetFlights(FlightSearch search);
         Task<List<LogBookEntry>> GetLogBook(Guid pilotId);
+        Task<FlightStatistics> GetStatistics(Guid flightId);
+        Task<Dictionary<Guid, FlightStatistics>> GetStatistics(IEnumerable<Guid> flightIds);
         Task<List<Waypoint>> GetWaypoints(Guid flightId);
         Task RemovePilot(Guid flightId, Guid pilotId);
         Task UpdateFlightEvents(Flight flight);

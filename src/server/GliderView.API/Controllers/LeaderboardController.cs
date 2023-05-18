@@ -31,6 +31,11 @@ namespace GliderView.API.Controllers
                 EndDate = new DateTime(date.Year, 12, 31)
             });
 
+            Dictionary<Guid, FlightStatistics> stats = await _flightRepo.GetStatistics(allFlights.Select(x => x.FlightId));
+            foreach (Flight flight in allFlights)
+                if (stats.ContainsKey(flight.FlightId))
+                    flight.Statistics = stats[flight.FlightId];
+
             IEnumerable<Flight> flightsThisMonth = allFlights.Where(x => x.StartDate.Month == date.Month);
             IEnumerable<Flight> flightsToday = allFlights.Where(x => x.StartDate.Date == date.Date);
 

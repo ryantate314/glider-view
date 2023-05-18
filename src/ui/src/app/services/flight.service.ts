@@ -8,17 +8,21 @@ import { Flight } from '../models/flight.model';
   providedIn: 'root'
 })
 export class FlightService {
+
+  public static readonly INCLUDE_WAYPOINTS = "waypoints";
+  public static readonly INCLUDE_STATISTICS = "statistics";
   
 
   constructor(private http: HttpClient) { }
 
-  public getFlights(startDate: Date, endDate: Date): Observable<Flight[]> {
+  public getFlights(startDate: Date, endDate: Date, includes: string = ""): Observable<Flight[]> {
     return this.http.get<Flight[]>(
       `${environment.apiUrl}/flights`,
       {
         params: {
           startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
+          endDate: endDate.toISOString(),
+          includes: includes
         }
       }
     ).pipe(
@@ -60,12 +64,12 @@ export class FlightService {
     );
   }
 
-  public getFlight(id: string): Observable<Flight> {
+  public getFlight(id: string, includes: string = ""): Observable<Flight> {
     return this.http.get<Flight>(
       `${environment.apiUrl}/flights/${id}`,
       {
         params: {
-          includes: "waypoints"
+          includes: includes
         }
       }
     ).pipe(

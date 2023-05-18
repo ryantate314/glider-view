@@ -3,12 +3,14 @@ using GliderView.Data.Models;
 using GliderView.Service;
 using GliderView.Service.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Dapper.SqlMapper;
 
 namespace GliderView.Data
 {
@@ -35,13 +37,6 @@ SELECT
     , A.Registration AS AircraftRegistration
     , A.NumSeats
     , A.IsGlider
-
-    -- Flight Statistics
-    , FS.MaxAltitude
-    , FS.ReleaseHeight
-    , FS.AltitudeGained
-    , FS.DistanceTraveled
-    , FS.PatternEntryAltitude
 FROM dbo.Flight F
     LEFT JOIN dbo.Aircraft A
         ON F.AircraftId = A.AircraftId
@@ -49,14 +44,13 @@ FROM dbo.Flight F
         ON F.TowId = Tow.FlightId
     LEFT JOIN dbo.Aircraft TowAircraft
         ON Tow.AircraftId = TowAircraft.AircraftId
-    LEFT JOIN dbo.FlightStatistics FS
-        ON F.FlightId = FS.FlightId
-            AND FS.IsDeleted = 0
 ";
+        private readonly ILogger<FlightRepository> _log;
 
-        public FlightRepository(string connectionString)
+        public FlightRepository(string connectionString, ILogger<FlightRepository> log)
             : base(connectionString)
         {
+            _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
 
@@ -125,6 +119,44 @@ WHERE F.FlightGuid IN (
             var flights = await connection.QueryAsync<Data.Models.Flight>(sql, args);
             return flights.Select(flight => ConvertDataToService(flight)!)
                 .ToList();
+        }
+
+        public async Task<FlightStatistics> GetStatistics(Guid flightId)
+        {
+            Dictionary<Guid, FlightStatistics> stats = await GetStatistics(new Guid[] { flightId });
+            if (stats.ContainsKey(flightId))
+                return stats[flightId];
+            else
+                return new FlightStatistics();
+        }
+
+        public async Task<Dictionary<Guid, FlightStatistics>> GetStatistics(IEnumerable<Guid> flightIds)
+        {
+            const string sql = @"
+SELECT
+    F.FlightGuid AS FlightId
+    , FS.StatisticId AS Statistic
+    , FS.[Value]
+FROM dbo.Flight F
+    JOIN dbo.FlightStatistics FS
+        ON F.FlightId = FS.FlightId
+WHERE F.IsDeleted = 0
+    AND FS.IsDeleted = 0
+    AND F.FlightGuid IN (
+        SELECT ID FROM @flightIds
+    )
+";
+            using (var con = GetOpenConnection())
+            {
+                var stats = await con.QueryAsync<FlightStatistic>(
+                    sql,
+                    new { flightIds = flightIds.AsTableValuedParameter() }
+                );
+
+                return stats.GroupBy(x => x.FlightId)
+                    .Select(x => new { FlightId = x.Key, Stats = GetStatisticsFromArray(x) })
+                    .ToDictionary(x => x.FlightId, x => x.Stats);
+            }
         }
 
         public async Task<List<Waypoint>> GetWaypoints(Guid flightId)
@@ -238,6 +270,74 @@ WHERE F.FlightId = SCOPE_IDENTITY();
 
         }
 
+        private IEnumerable<FlightStatistic> GetStatisticsFromFlight(Service.Models.Flight flight)
+        {
+            var statistics = new List<FlightStatistic>()
+            {
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.AltitudeGained,
+                    Value = flight.Statistics?.AltitudeGained
+                },
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.MaxAltitude,
+                    Value = flight.Statistics?.MaxAltitude
+                },
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.PatternAltitude,
+                    Value = flight.Statistics?.PatternEntryAltitude
+                },
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.ReleaseHeight,
+                    Value = flight.Statistics?.ReleaseHeight
+                },
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.DistanceTraveled,
+                    Value = flight.Statistics?.DistanceTraveled
+                }
+            };
+            return statistics;
+        }
+
+        private FlightStatistics GetStatisticsFromArray(IEnumerable<FlightStatistic> statistics)
+        {
+            var stats = new FlightStatistics();
+            foreach (var stat in statistics)
+            {
+                switch (stat.Statistic)
+                {
+                    case Statistic.AltitudeGained:
+                        stats.AltitudeGained = (int?)stat.Value;
+                        break;
+                    case Statistic.PatternAltitude:
+                        stats.PatternEntryAltitude= (int?)stat.Value;
+                        break;
+                    case Statistic.ReleaseHeight:
+                        stats.ReleaseHeight = (int?)stat.Value;
+                        break;
+                    case Statistic.DistanceTraveled:
+                        stats.DistanceTraveled = stat.Value;
+                        break;
+                    case Statistic.MaxAltitude:
+                        stats.MaxAltitude = (int?)stat.Value;
+                        break;
+                    default:
+                       _log.LogWarning("Unknown statistic: " + stat.Statistic);
+                        break;
+                }
+            }
+            return stats;
+        }
+
         private Task InsertWaypoints(Service.Models.Flight flight, IDbTransaction tran)
         {
             const string sql = @"
@@ -273,6 +373,8 @@ FROM @waypoints W
 
         public async Task UpsertFlightStatistics(Service.Models.Flight flight)
         {
+            IEnumerable<FlightStatistic> statistics = GetStatisticsFromFlight(flight);
+
             const string sql = @"
 DECLARE @flightId INT = (
     SELECT F.FlightId
@@ -284,39 +386,54 @@ DECLARE @flightId INT = (
 IF @flightId IS NULL
     THROW 51000, 'Flight does not exist.', 1;
 
-UPDATE FlightStatistics
-    SET IsDeleted = 1
-WHERE FlightId = @flightId
-    AND IsDeleted = 0;
+BEGIN TRAN
+    BEGIN TRY
 
-INSERT INTO FlightStatistics (
-      FlightId
-    , ReleaseHeight
-	, AltitudeGained
-	, DistanceTraveled
-    , MaxAltitude
-    , PatternEntryAltitude
-)
-VALUES (
-      @flightId
-    , @releaseHeight
-    , @altitudeGained
-    , @distanceTraveled
-    , @maxAltitude
-    , @patternEntryAltitude
-)
+        UPDATE FlightStatistics
+            SET IsDeleted = 1
+        WHERE FlightId = @flightId
+            AND IsDeleted = 0;
+
+        INSERT INTO FlightStatistics (
+              FlightId
+            , StatisticId
+            , [Value]
+        )
+        SELECT
+              @flightId
+            , S.StatisticId
+            , S.[Value]
+        FROM @statistics S;
+
+        COMMIT TRAN
+    END TRY
+BEGIN CATCH
+    ROLLBACK TRAN;
+    THROW;
+END CATCH
 ";
             var args = new
             {
-                FlightGuid = flight.FlightId,
-                ReleaseHeight = flight.Statistics?.ReleaseHeight,
-                MaxAltitude = flight.Statistics?.MaxAltitude,
-                AltitudeGained = flight.Statistics?.AltitudeGained,
-                DistanceTraveled = flight.Statistics?.DistanceTraveled,
-                PatternEntryAltitude = flight.Statistics?.PatternEntryAltitude
+                flightGuid = flight.FlightId,
+                statistics = ToTableValueParameter(statistics)
             };
             using (var con = GetOpenConnection())
                 await con.ExecuteAsync(sql, args);
+        }
+
+        private ICustomQueryParameter ToTableValueParameter(IEnumerable<FlightStatistic> statistics)
+        {
+            var table = new DataTable();
+            table.Columns.Add("StatisticId", typeof(int));
+            table.Columns.Add("Value", typeof(float));
+
+            foreach (var stat in statistics)
+                table.Rows.Add(
+                    stat.Statistic,
+                    stat.Value
+                );
+
+            return table.AsTableValuedParameter("Statistic");
         }
 
         private Service.Models.Flight? ConvertDataToService(Data.Models.Flight flight)
@@ -355,15 +472,7 @@ VALUES (
                                 RegistrationId = flight.TowAircraftRegistration,
                                 TrackerId = flight.TowAircraftTrackerId
                             }
-                    },
-                Statistics = new FlightStatistics()
-                {
-                    AltitudeGained = flight.AltitudeGained,
-                    DistanceTraveled = flight.DistanceTraveled,
-                    MaxAltitude = flight.MaxAltitude,
-                    ReleaseHeight = flight.ReleaseHeight,
-                    PatternEntryAltitude = flight.PatternEntryAltitude
-                }
+                    }
             };
         }
 

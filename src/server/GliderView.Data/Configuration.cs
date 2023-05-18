@@ -2,6 +2,7 @@
 using GliderView.Service.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,9 @@ namespace GliderView.Data
         public static void RegisterServices(IServiceCollection services, IConfiguration config)
         {
             services.AddTransient<IFlightRepository, FlightRepository>(services =>
-                new FlightRepository(config.GetConnectionString("gliderView")!)
+                new FlightRepository(
+                    config.GetConnectionString("gliderView")!,
+                    services.GetRequiredService<ILogger<FlightRepository>>())
             );
 
             services.AddTransient<IUserRepository, UserRepository>(services =>
