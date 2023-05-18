@@ -12,6 +12,7 @@ namespace GliderView.Service.Models
         ReleaseHeight = 2,
         AltitudeGained = 3,
         DistanceTraveled = 4,
-        MaxAltitude = 5
+        MaxAltitude = 5,
+        MaxDistanceFromField = 6
     }
 }

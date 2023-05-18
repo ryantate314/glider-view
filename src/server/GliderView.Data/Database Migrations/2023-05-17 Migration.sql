@@ -17,13 +17,15 @@ DECLARE @altitudeGained INT = 2;
 DECLARE @distanceTraveled INT = 3;
 DECLARE @maxAltitude INT = 4;
 DECLARE @patternAltitude INT = 5;
+DECLARE @farthestDistanceFromField INT = 6;
 
 INSERT INTO dbo.Statistic VALUES
   (@releaseHeight, 'Release Height')
 , (@altitudeGained, 'Altitude Gained')
 , (@distanceTraveled, 'Distance Traveled')
 , (@maxAltitude, 'Max Altitude')
-, (@patternAltitude, 'Pattern Altitude');
+, (@patternAltitude, 'Pattern Altitude')
+, (@farthestDistanceFromField, 'Max Distance From Field');
 
 CREATE TABLE dbo.FlightStatisticsNew (
 	FLightStatisticId INT PRIMARY KEY IDENTITY(1, 1),

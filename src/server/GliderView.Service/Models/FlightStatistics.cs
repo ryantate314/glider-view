@@ -16,5 +16,6 @@ namespace GliderView.Service.Models
         /// </summary>
         public float? DistanceTraveled { get; set; }
         public int? PatternEntryAltitude { get; set; }
+        public float? MaxDistanceFromField { get; set; }
     }
 }

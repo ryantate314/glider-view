@@ -7,6 +7,7 @@ import * as leaflet from 'leaflet';
 import { ChartData, ChartOptions } from 'chart.js';
 import * as moment from 'moment';
 import { LineAnnotationOptions } from 'chartjs-plugin-annotation';
+import { UnitUtils } from 'src/app/unit-utils';
 
 const baseChartOptions: ChartOptions<'line'> = {
   plugins: {
@@ -183,8 +184,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
   public kmToM(value: number | undefined | null): number | null {
     if (value === null || value === undefined)
       return null;
-
-    return Math.round(this.mToFt(value * 1000)! / 5280 * 10) / 10;    
+    
+    return Math.round(UnitUtils.kmToNm(value)! * 10) / 10;    
   }
 
   ngAfterViewInit(): void {

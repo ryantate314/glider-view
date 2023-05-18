@@ -46,6 +46,7 @@ export interface Statistics {
     altitudeGained: number | null;
     maxAltitude: number | null;
     patternEntryAltitude: number | null;
+    maxDistanceFromField: number | null;
 }
 
 export interface LogBookEntry {

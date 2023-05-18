@@ -150,7 +150,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
                 altitudeGained: null,
                 distanceTraveled: null,
                 maxAltitude: null,
-                patternEntryAltitude: null
+                patternEntryAltitude: null,
+                maxDistanceFromField: null
               },
               towFlight: flight,
               waypoints: null

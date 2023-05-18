@@ -303,6 +303,12 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                     FlightId = flight.FlightId,
                     Statistic = Statistic.DistanceTraveled,
                     Value = flight.Statistics?.DistanceTraveled
+                },
+                new FlightStatistic()
+                {
+                    FlightId = flight.FlightId,
+                    Statistic = Statistic.MaxDistanceFromField,
+                    Value = flight.Statistics?.MaxDistanceFromField
                 }
             };
             return statistics;
@@ -329,6 +335,9 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                         break;
                     case Statistic.MaxAltitude:
                         stats.MaxAltitude = (int?)stat.Value;
+                        break;
+                    case Statistic.MaxDistanceFromField:
+                        stats.MaxDistanceFromField = stat.Value;
                         break;
                     default:
                        _log.LogWarning("Unknown statistic: " + stat.Statistic);

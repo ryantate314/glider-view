@@ -21,7 +21,10 @@ namespace GliderView.Service
             _logger = logger;
         }
 
-        private readonly static Polygon Pattern = new Polygon(new Point[]
+        /// <summary>
+        /// GPS coordinates for the Chilhowee Gliderport runway.
+        /// </summary>
+        private readonly static Point[] PatternPoints = new Point[]
         {
             // NE
             new Point(-84.573683, 35.226593),
@@ -33,7 +36,10 @@ namespace GliderView.Service
             new Point(-84.579051, 35.219070),
             // NE - Repeat first point to close polygon
             new Point(-84.573683, 35.226593)
-        });
+        };
+        
+        private readonly static Polygon Pattern = new Polygon(PatternPoints);
+
         private readonly ILogger<FlightAnalyzer> _logger;
 
         public FlightStatistics Analyze(Flight flight)
@@ -71,6 +77,8 @@ namespace GliderView.Service
                 stats.DistanceTraveled = (float)FindDistance(flightAfterRelease);
 
                 stats.AltitudeGained = FindAltitudeGained(flightAfterRelease);
+
+                stats.MaxDistanceFromField = GetFarthestDistanceFromAirport(flightAfterRelease);
             }
 
             Waypoint? patternEntry = GetPatternEntry(waypoints);
@@ -113,6 +121,39 @@ namespace GliderView.Service
             }
 
             return distance;
+        }
+
+        private static Point GetCenterOfField(Point[] pattern)
+        {
+            Point northEnd = new Point(
+                (pattern[0].Longitude + pattern[1].Longitude) / 2,
+                (pattern[0].Latitude + pattern[1].Latitude) / 2
+            );
+
+            Point southEnd = new Point(
+                (pattern[2].Longitude + pattern[3].Longitude) / 2,
+                (pattern[2].Latitude + pattern[3].Latitude) / 2
+            );
+
+            return new Point(
+                (northEnd.Longitude + southEnd.Longitude) / 2,
+                (northEnd.Latitude + southEnd.Latitude) / 2
+            );
+        }
+
+        private static float GetFarthestDistanceFromAirport(List<Waypoint> waypoints)
+        {
+            Point centerPoint = GetCenterOfField(PatternPoints);
+
+            float farthestDistance = 0;
+            foreach (var point in waypoints)
+            {
+                float distance = (float)GetDistanceFromLatLonInKm(centerPoint, new Point(point.Longitude, point.Latitude));
+                if (distance > farthestDistance)
+                    farthestDistance = distance;
+            }
+
+            return farthestDistance;
         }
 
         private static double GetDistanceFromLatLonInKm(Point p1, Point p2)
