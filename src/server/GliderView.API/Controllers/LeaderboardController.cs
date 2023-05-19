@@ -56,9 +56,9 @@ namespace GliderView.API.Controllers
                     .OrderByDescending(x => x.Duration)
                     .Take(topN)
                     .ToList(),
-                LongestLengthFlightsThisYear = allFlights
-                    .Where(x => x.Statistics != null)
-                    .OrderByDescending(x => x.Statistics!.DistanceTraveled)
+                MaxDistanceFromFieldThisYear = allFlights
+                    .Where(x => x.Statistics != null && x.Statistics.MaxDistanceFromField != null)
+                    .OrderByDescending(x => x.Statistics!.MaxDistanceFromField)
                     .Take(topN)
                     .ToList(),
 
@@ -67,9 +67,9 @@ namespace GliderView.API.Controllers
                     .OrderByDescending(x => x.Duration)
                     .Take(topN)
                     .ToList(),
-                LongestLengthFlightsThisMonth = flightsThisMonth
-                    .Where(x => x.Statistics != null)
-                    .OrderByDescending(x => x.Statistics!.DistanceTraveled)
+                MaxDistanceFromFieldThisMonth = flightsThisMonth
+                    .Where(x => x.Statistics != null && x.Statistics.MaxDistanceFromField != null)
+                    .OrderByDescending(x => x.Statistics!.MaxDistanceFromField)
                     .Take(topN)
                     .ToList(),
 
@@ -78,9 +78,9 @@ namespace GliderView.API.Controllers
                     .OrderByDescending(x => x.Duration)
                     .Take(topN)
                     .ToList(),
-                LongestLengthFlightsToday = flightsToday
-                    .Where(x => x.Statistics != null)
-                    .OrderByDescending(x => x.Statistics!.DistanceTraveled)
+                MaxDistanceFromFieldToday = flightsToday
+                    .Where(x => x.Statistics != null && x.Statistics.MaxDistanceFromField != null)
+                    .OrderByDescending(x => x.Statistics!.MaxDistanceFromField)
                     .Take(topN)
                     .ToList(),
             };

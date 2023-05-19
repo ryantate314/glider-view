@@ -4,14 +4,14 @@ export interface Leaderboard {
     date: Date;
 
     numFlightsThisYear: number;
-    longestLengthFlightsThisYear: Flight[];
+    maxDistanceFromFieldThisYear: Flight[];
     longestDurationFlightsThisYear: Flight[];
 
     numFlightsThisMonth: number;
-    longestLengthFlightsThisMonth: Flight[];
+    maxDistanceFromFieldThisMonth: Flight[];
     longestDurationFlightsThisMonth: Flight[];
 
     numFlightsToday: number;
-    longestLengthFlightsToday: Flight[];
+    maxDistanceFromFieldToday: Flight[];
     longestDurationFlightsToday: Flight[];
 }

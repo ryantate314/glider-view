@@ -9,14 +9,14 @@ namespace GliderView.API.Models
         public int NumFlightsThisYear { get; set; }
        
         public List<Flight> LongestDurationFlightsThisYear { get; set; }
-        public List<Flight> LongestLengthFlightsThisYear { get; set; }
+        public List<Flight> MaxDistanceFromFieldThisYear { get; set; }
 
         public int NumFlightsThisMonth { get; set; }
-        public List<Flight> LongestLengthFlightsThisMonth { get; set; }
+        public List<Flight> MaxDistanceFromFieldThisMonth { get; set; }
         public List<Flight> LongestDurationFlightsThisMonth { get; set; }
 
         public int NumFlightsToday { get; set; }
-        public List<Flight> LongestLengthFlightsToday { get; set; }
+        public List<Flight> MaxDistanceFromFieldToday { get; set; }
         public List<Flight> LongestDurationFlightsToday { get; set; }
 
 

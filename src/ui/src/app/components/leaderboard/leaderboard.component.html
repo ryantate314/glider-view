@@ -17,17 +17,17 @@
         <h2>Today</h2>
         <p>Total flights: {{leaderboard.numFlightsToday}}</p>
         <ng-container
-            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsToday, longestDuration: leaderboard.longestDurationFlightsToday }"
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.maxDistanceFromFieldToday, longestDuration: leaderboard.longestDurationFlightsToday }"
         ></ng-container>
         <h2>Month</h2>
         <p>Total flights: {{leaderboard.numFlightsThisMonth}}</p>
         <ng-container
-            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsThisMonth, longestDuration: leaderboard.longestDurationFlightsThisMonth }"
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.maxDistanceFromFieldThisMonth, longestDuration: leaderboard.longestDurationFlightsThisMonth }"
         ></ng-container>
         <h2>Year</h2>
         <p>Total flights: {{leaderboard.numFlightsThisYear}}</p>
         <ng-container
-            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.longestLengthFlightsThisYear, longestDuration: leaderboard.longestDurationFlightsThisYear }"
+            *ngTemplateOutlet="flightsData; context: { longestLength: leaderboard.maxDistanceFromFieldThisYear, longestDuration: leaderboard.longestDurationFlightsThisYear }"
         ></ng-container>
     </div>
 
@@ -54,13 +54,13 @@
                 
             </div>
             <div class="col-lg-6">
-                <h5>Longest Distance Traveled</h5>
+                <h5>Max Distance from Field</h5>
                 <p *ngIf="longestLength.length == 0">No flights to display.</p>
                 <table class="table table-hover" *ngIf="longestLength.length > 0">
                     <tbody>
                         <tr *ngFor="let flight of longestLength; let i = index" class="clickable-row" (click)="onFlightClick(flight)">
                             <td>{{ i + 1}}.</td>
-                            <td>{{formatDistance(flight.statistics!.distanceTraveled)}}</td>
+                            <td>{{formatDistance(flight.statistics!.maxDistanceFromField)}}</td>
                             <td>{{flight.aircraft?.description ?? "Unknown Glider"}}</td>
                         </tr>
                     </tbody>
