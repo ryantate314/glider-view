@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, map, Observable, of, ReplaySubject, startWith, throwError, withLatestFrom } from 'rxjs';
+import { catchError, distinctUntilChanged, map, Observable, of, ReplaySubject, shareReplay, startWith, throwError, withLatestFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Scopes, Token, User, UserLogin } from '../models/user.model';
 import { UserService } from './user.service';
@@ -27,7 +27,9 @@ export class AuthService {
 
   private _isAuthenticated$ = new ReplaySubject<boolean>(1);
   public get isAuthenticated$(): Observable<boolean> {
-    return this._isAuthenticated$;
+    return this._isAuthenticated$.pipe(
+      distinctUntilChanged()
+    );
   }
 
   private get _isLoggedIn(): boolean {
@@ -42,6 +44,10 @@ export class AuthService {
   }
 
   public init() {
+    // Triggered on page refresh
+    // Save a flag to session storage indicating the user is logged in. If so,
+    // make an API call to the server to see if our token is still valid. The access
+    // token is not stored in session for security.s
     if (this._isLoggedIn)
     {
       this.refreshToken().pipe(
@@ -66,6 +72,7 @@ export class AuthService {
       this._isAuthenticated$.next(false);
 
     this.isAuthenticated$.subscribe(isAuthenticated =>
+      // Persist login state to session storage
       this._isLoggedIn = isAuthenticated
     );
   }
@@ -88,7 +95,8 @@ export class AuthService {
     return this.scopes$.pipe(
       map(scopes => {
         return scopes.some(x => x == scope);
-      })
+      }),
+      shareReplay(1)
     );
   }
 
@@ -108,6 +116,7 @@ export class AuthService {
     this._isAuthenticated$.next(false);
     this.userService.logOut()
       .subscribe();
+    this._scopes$.next([]);
   }
 
   public updatePassword(currentPassword: string, newPassword: string): Observable<void> {

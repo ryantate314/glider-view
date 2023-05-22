@@ -300,5 +300,14 @@ namespace GliderView.API
             return includeList;
         }
 
+        public bool ContainsProperty(string includes, string propertyName)
+        {
+            if (string.IsNullOrEmpty(includes))
+                return false;
+
+            return ParseIncludeList(includes)
+                .Contains(propertyName, StringComparer.OrdinalIgnoreCase);
+        }
+
     }
 }

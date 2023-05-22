@@ -19,5 +19,6 @@ namespace GliderView.Service.Repositories
         Task<IEnumerable<User>> GetUsers();
         Task UpdateFailedLoginAttempts(User user);
         Task UpdatePassword(User user);
+        Task UpdateUser(User user);
     }
 }

@@ -46,8 +46,11 @@
                     <tbody>
                         <tr *ngFor="let flight of longestDuration; let i = index" class="clickable-row" (click)="onFlightClick(flight)">
                             <td>{{ i + 1}}.</td>
-                            <td>{{formatDuration(flight.duration)}}</td>
+                            <td>
+                                <appFlightDuration [seconds]="flight.duration"></appFlightDuration>
+                            </td>
                             <td>{{flight.aircraft?.description ?? "Unknown Glider"}}</td>
+                            <td>{{ formatPilot(flight) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -62,6 +65,7 @@
                             <td>{{ i + 1}}.</td>
                             <td>{{formatDistance(flight.statistics!.maxDistanceFromField)}}</td>
                             <td>{{flight.aircraft?.description ?? "Unknown Glider"}}</td>
+                            <td>{{ formatPilot(flight) }}</td>
                         </tr>
                     </tbody>
                 </table>

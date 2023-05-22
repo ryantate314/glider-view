@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import * as moment from 'moment';
+import { map, Observable, of, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { IGNORE_AUTH_HEADER } from '../interceptors/auth.interceptor';
 import { LogBookEntry } from '../models/flight.model';
@@ -11,6 +12,11 @@ import { FlightService } from './flight.service';
   providedIn: 'root'
 })
 export class UserService {
+
+  private userCache: {
+    expires: moment.Moment,
+    users: User[]
+  } | null = null;
   
   constructor(private http: HttpClient) { }
 
@@ -51,8 +57,19 @@ export class UserService {
   }
 
   getAll(): Observable<User[]> {
+    if (this.userCache != null && moment().isBefore(this.userCache.expires)) {
+      return of(this.userCache.users);
+    }
+
     return this.http.get<User[]>(
       `${environment.apiUrl}/users`
+    ).pipe(
+      tap(users => {
+        this.userCache = {
+          expires: moment().add(5, 'minutes'),
+          users: users
+        }
+      })
     );
   }
 
@@ -74,6 +91,8 @@ export class UserService {
         name,
         role
       }
+    ).pipe(
+      tap(() => this.userCache = null)
     );
   }
 
@@ -118,6 +137,8 @@ export class UserService {
   deleteUser(userId: string): Observable<void> {
     return this.http.delete<void>(
       `${environment.apiUrl}/users/${userId}`
+    ).pipe(
+      tap(() => this.userCache = null)
     );
   }
 
@@ -132,4 +153,12 @@ export class UserService {
     );
   }
 
+  updateUser(user: User): Observable<User> {
+    return this.http.put<User>(
+      `${environment.apiUrl}/users/${user.userId}`,
+      user
+    ).pipe(
+      tap(user => this.userCache = null)
+    );
+  }
 }

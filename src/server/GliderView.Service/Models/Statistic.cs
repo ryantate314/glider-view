@@ -8,8 +8,8 @@ namespace GliderView.Service.Models
 {
     public enum Statistic
     {
-        PatternAltitude = 1,
-        ReleaseHeight = 2,
+        ReleaseHeight = 1,
+        PatternAltitude = 2,
         AltitudeGained = 3,
         DistanceTraveled = 4,
         MaxAltitude = 5,

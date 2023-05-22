@@ -21,5 +21,6 @@
         public Aircraft? Aircraft { get; set; }
         public Flight? TowFlight { get; set; }
         public FlightStatistics? Statistics { get; set; }
+        public List<Occupant>? Occupants { get; set; }
     }
 }

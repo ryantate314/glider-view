@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using GliderView.Data.Models;
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
 using System;
@@ -243,6 +244,23 @@ WHERE UserGuid = @userId
             using (var con = GetOpenConnection())
             {
                 await con.ExecuteAsync(sql, new { userId });
+            }
+        }
+
+        public async Task UpdateUser(User user)
+        {
+            const string sql = @"
+UPDATE dbo.[User]
+    SET ModifiedDate = CURRENT_TIMESTAMP,
+    Name = @name,
+    Email = @email,
+    Role = @role
+WHERE UserGuid = @userId
+    AND IsDeleted = 0;
+";
+            using (var con = GetOpenConnection())
+            {
+                await con.ExecuteAsync(sql, user);
             }
         }
     }

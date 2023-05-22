@@ -1,24 +1,74 @@
 <div class="container pt-2">
     <ng-container *ngIf="flight$ | async as flight; else loading">
         <h1>{{ flight.aircraft?.description ?? "Unknown Aircraft" }}</h1>
-        <p> {{ flight.startDate | date: 'EEE MM/dd/yyyy h:mm a' }} - {{ flight.endDate | date: 'h:mm a' }}</p>
+        <p>
+            <a [routerLink]="['/flights/dashboard', flight.startDate | date: 'yyyy-MM-dd']" [fragment]="flight.flightId!" title="Go to Day">{{ flight.startDate | date: 'EEE MM/dd/yyyy' }}</a>
+            {{ flight.startDate | date: 'h:mm a' }} - {{ flight.endDate | date: 'h:mm a' }} (<appFlightDuration [seconds]="flight.duration"></appFlightDuration>)
+        </p>
 
-        <div class="mb-4">
-            <h4>
-                Statistics
-                <button mat-icon-button (click)="recalculateStatistics()" title="Recalculate Statistics" class="ms-1">
-                    <mat-icon>sync</mat-icon>
-                </button>
-            </h4>
-            <p *ngIf="!flight.statistics">No statistics available for this flight.</p>
-            <div *ngIf="flight.statistics">
-                <div>Max Altitude: {{ flight.statistics.maxAltitude !== null ? mToFt(flight.statistics!.maxAltitude) + "ft MSL" : "Unknown" }}</div>
-                <div>Distance Traveled: {{ flight.statistics.distanceTraveled !== null ? kmToM(flight.statistics!.distanceTraveled) + "nm" : "Unknown" }}</div>
-                <div>Max Distance From Field: {{ flight.statistics.maxDistanceFromField !== null ? kmToM(flight.statistics!.maxDistanceFromField) + "nm" : "Unknown" }}</div>
-                <div>Release Height: {{ flight.statistics.releaseHeight !== null ? mToFt(flight.statistics!.releaseHeight) + "ft MSL" : "Unknown" }}</div>
-                <div>Pattern Entry Altitude: {{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft MSL" : "Unknown" }}</div>
+        <div class="row">
+            <div class="col-md col-lg-4 mb-4">
+                <div class="d-flex align-items-center border-bottom mb-3">
+                    <h4>Statistics</h4>
+                    <button mat-icon-button style="margin-left: auto;" (click)="recalculateStatistics()" title="Recalculate Statistics">
+                        <mat-icon>sync</mat-icon>
+                    </button>
+                </div>
+                
+                <p *ngIf="!flight.statistics">No statistics available for this flight.</p>
+                <table *ngIf="flight.statistics" class="table">
+                    <tbody>
+                        <tr>
+                            <td>Max Altitude:</td>
+                            <td>{{ flight.statistics.maxAltitude !== null ? mToFt(flight.statistics!.maxAltitude) + "ft MSL" : "Unknown" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Distance Traveled:</td>
+                            <td>{{ flight.statistics.distanceTraveled !== null ? kmToM(flight.statistics!.distanceTraveled) + "nm" : "Unknown" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Max Distance From Field:</td>
+                            <td>{{ flight.statistics.maxDistanceFromField !== null ? kmToM(flight.statistics!.maxDistanceFromField) + "nm" : "Unknown" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Release Height:</td>
+                            <td>{{ flight.statistics.releaseHeight !== null ? mToFt(flight.statistics!.releaseHeight) + "ft MSL" : "Unknown" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Pattern Entry Altitude</td>
+                            <td> {{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft MSL" : "Unknown" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </div>
+            <div *ngIf="user$ | async as user; else notLoggedIn" class="col-md col-lg-4 offset-lg-2 mb-3">
+                <div class="d-flex align-items-center border-bottom mb-4">
+                    <h4>Pilots</h4>
+                    <button mat-icon-button [matMenuTriggerFor]="menu" style="margin-left: auto;">
+                        <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #menu="matMenu">
+                        <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="!isUserOnFlight(flight, user)">Add to My Logbook</button>
+                        <button mat-menu-item (click)="removePilot(flight.flightId!, user!.userId)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
+                        <button mat-menu-item (click)="assignPilots(flight)" *ngIf="canAssignPilots$ | async">Assign Pilots</button>
+                    </mat-menu>
+                </div>
+                <p *ngIf="flight.occupants?.length == 0">No one has claimed this flight yet.</p> 
+                <table>
+                    <tbody>
+                        <tr *ngFor="let occupant of flight.occupants">
+                            <td class="pe-4 pt-1 pb-1">{{ occupant.name }}</td>
+                            <td class="pt-1 pb-1">
+                                <button mat-icon-button class="small-icon-button" *ngIf="canAssignPilots$ | async" title="Remove from Flight" (click)="removePilot(flight.flightId!, occupant.userId!)">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+        </div><!-- /.row -->
     </ng-container>
 </div>
 
@@ -45,4 +95,8 @@
     <div class="mt-4">
         <mat-spinner style="margin-left: auto; margin-right: auto;"></mat-spinner>
     </div>
+</ng-template>
+
+<ng-template #notLoggedIn>
+    <p>Please log in to see a list of pilots on this flight.</p>
 </ng-template>

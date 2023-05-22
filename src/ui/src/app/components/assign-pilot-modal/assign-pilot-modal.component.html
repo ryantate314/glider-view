@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>Add Pilots to Flight</h2>
+<form [formGroup]="form" (submit)="onSubmit($event)">
+    <mat-dialog-content>
+        <mat-form-field class="w-100">
+            <input type="text" placeholder="Pick one" matInput formControlName="pilot"
+                [matAutocomplete]="auto">
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onPilotSelected($event)">
+                <mat-option *ngFor="let pilot of filteredPilots$ | async" [value]="pilot.userId">
+                    {{pilot.name}}
+                </mat-option>
+            </mat-autocomplete>
+        </mat-form-field>
+        <table class="w-100">
+            <tbody>
+                <tr *ngFor="let occupant of selectedPilots$ | async">
+                    <td class="pe-4 pt-1 pb-1">{{ occupant.name }}</td>
+                    <td class="pt-1 pb-1">
+                        <button mat-icon-button class="small-icon-button" title="Remove from Flight" (click)="onRemovePilot(occupant)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+        <button mat-button mat-dialog-close>Cancel</button>
+        <button mat-raised-button type="submit" color="primary">Save</button>
+    </mat-dialog-actions>
+</form>

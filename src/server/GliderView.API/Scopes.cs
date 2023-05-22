@@ -6,11 +6,13 @@ namespace GliderView.API
     {
         public const string CreateUser = "user:create";
         public const string ViewAllUsers = "user:viewall";
+        public const string AssignPilots = "flight:assignPilot";
 
         public static IReadOnlyList<string> AllScopes = new List<string>()
         {
             CreateUser,
-            ViewAllUsers
+            ViewAllUsers,
+            AssignPilots
         };
 
         public static class Roles
@@ -18,7 +20,8 @@ namespace GliderView.API
             public static readonly IReadOnlyList<string> Admin = new string[]
             {
                 CreateUser,
-                ViewAllUsers
+                ViewAllUsers,
+                AssignPilots
             };
         }
 

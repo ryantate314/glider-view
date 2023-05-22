@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, map, Observable, shareReplay, switchMap, withLatestFrom } from 'rxjs';
+import { combineLatest, distinctUntilChanged, map, Observable, shareReplay, switchMap, tap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as moment from 'moment';
@@ -29,9 +29,11 @@ export class LeaderboardComponent implements OnInit {
   ) {
     this.date$ = this.route.paramMap.pipe(
       map(params => params.get('date') ?
-        new Date(params.get('date')!)
+      // use moment to avoid daylight savings time errors
+        moment(params.get('date')!).toDate()
         : new Date()
-      )
+      ),
+      distinctUntilChanged()
     );
 
     this.leaderboard$ = this.date$.pipe(
@@ -47,7 +49,7 @@ export class LeaderboardComponent implements OnInit {
   public onDateChange(event: MatDatepickerInputEvent<Date>) {
     const newDate = event.value
     console.log("New date: ", newDate);
-    this.router.navigate(["leaderboard", `${newDate!.getFullYear()}-${newDate!.getMonth() + 1}-${newDate!.getDate()}`])
+    this.router.navigate(["leaderboard", `${moment(newDate!).format('YYYY-MM-DD')}`])
   }
 
   public formatDistance(meters: number | null) {
@@ -56,23 +58,21 @@ export class LeaderboardComponent implements OnInit {
       : null;
   }
 
-  public formatDuration(seconds: number | null) {
-    if (seconds === null)
-      return null;
-
-    const duration = moment.duration(seconds, 'second');
-    if (seconds > 60 * 60)
-      return moment.utc(duration.as('milliseconds'))
-        .format('H[h]m[m]s[s]')
-    else if (seconds > 60)
-      return moment.utc(duration.as('milliseconds'))
-        .format('m[m]s[s]')
-    else
-      return seconds + "s";
-  }
-
   public onFlightClick(flight: Flight) {
     this.router.navigate(['flights', flight.flightId]);
+  }
+
+  public formatPilot(flight: Flight): string {
+    let pilots = "";
+
+    if (flight.occupants) {
+      if (flight.occupants.length == 1)
+        pilots = flight.occupants[0].name;
+      else
+        pilots = flight.occupants[0].name + " +" + (flight.occupants.length - 1);
+    }
+
+    return pilots;
   }
 
 }

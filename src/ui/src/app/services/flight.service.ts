@@ -2,7 +2,7 @@ import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Flight } from '../models/flight.model';
+import { Flight, Occupant } from '../models/flight.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +11,7 @@ export class FlightService {
 
   public static readonly INCLUDE_WAYPOINTS = "waypoints";
   public static readonly INCLUDE_STATISTICS = "statistics";
-  
+  public static readonly INCLUDE_PILOTS = "occupants";
 
   constructor(private http: HttpClient) { }
 
@@ -99,6 +99,13 @@ export class FlightService {
   public removePilot(flightId: string, userId: string): any {
     return this.http.delete(
       `${environment.apiUrl}/flights/${flightId}/pilots/${userId}`
+    );
+  }
+
+  public updatePilots(flightId: string, occupants: Occupant[]): Observable<void> {
+    return this.http.put<void>(
+      `${environment.apiUrl}/flights/${flightId}/pilots`,
+      occupants
     );
   }
 

@@ -689,5 +689,41 @@ WHERE U.UserGuid = @pilotId
                 await con.ExecuteAsync(sql, new { flightId, pilotId });
             }
         }
+
+        public async Task<IEnumerable<Occupant>> GetPilotsOnFlight(Guid flightId)
+        {
+            var pilots = await GetPilotsOnFlights(new Guid[] { flightId });
+            if (pilots.ContainsKey(flightId))
+                return pilots[flightId];
+            else
+                return new List<Occupant>();
+        }
+
+        public async Task<Dictionary<Guid, IEnumerable<Occupant>>> GetPilotsOnFlights(IEnumerable<Guid> flightIds)
+        {
+            const string sql = @"
+SELECT
+    F.FlightGuid AS FlightId
+    , U.UserGuid AS UserId
+    , ISNULL(U.Name, O.Name) AS Name
+    , O.Notes
+    , O.FlightNumber
+FROM dbo.Flight F
+    JOIN dbo.Occupant O
+        ON F.FlightId = O.FlightId
+    LEFT JOIN dbo.[User] U
+        ON O.UserId = U.UserId
+WHERE F.IsDeleted = 0
+    AND F.FlightGuid IN (
+        SELECT Id FROM @flightIds
+    )
+";
+            using (var con = GetOpenConnection())
+            {
+                return (await con.QueryAsync<Service.Models.Occupant>(sql, new { flightIds = flightIds.AsTableValuedParameter() }))
+                    .GroupBy(x => x.FlightId)
+                    .ToDictionary(x => x.Key, x => x.AsEnumerable());
+            }
+        }
     }
 }

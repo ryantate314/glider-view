@@ -31,10 +31,20 @@ namespace GliderView.API.Controllers
                 EndDate = new DateTime(date.Year, 12, 31)
             });
 
-            Dictionary<Guid, FlightStatistics> stats = await _flightRepo.GetStatistics(allFlights.Select(x => x.FlightId));
+            Task<Dictionary<Guid, FlightStatistics>> statsTask = _flightRepo.GetStatistics(allFlights.Select(x => x.FlightId));
+            Task<Dictionary<Guid, IEnumerable<Occupant>>> getPilotsTask = _flightRepo.GetPilotsOnFlights(allFlights.Select(x => x.FlightId));
+
+            await Task.WhenAll(statsTask, getPilotsTask);
+
             foreach (Flight flight in allFlights)
-                if (stats.ContainsKey(flight.FlightId))
-                    flight.Statistics = stats[flight.FlightId];
+            {
+                if (statsTask.Result.ContainsKey(flight.FlightId))
+                    flight.Statistics = statsTask.Result[flight.FlightId];
+
+                if (getPilotsTask.Result.ContainsKey(flight.FlightId))
+                    flight.Occupants = getPilotsTask.Result[flight.FlightId]
+                        .ToList();
+            }
 
             IEnumerable<Flight> flightsThisMonth = allFlights.Where(x => x.StartDate.Month == date.Month);
             IEnumerable<Flight> flightsToday = allFlights.Where(x => x.StartDate.Date == date.Date);

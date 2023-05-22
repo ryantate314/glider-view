@@ -37,22 +37,41 @@
                 <button mat-icon-button title="Newest Flights First" (click)="sortDescending()" [disabled]="(sortDirection$ | async) === 'desc'">
                     <mat-icon>arrow_upward</mat-icon>
                 </button>
+
                 <button mat-icon-button title="Oldest Flights First" (click)="sortAscending()" [disabled]="(sortDirection$ | async) === 'asc'">
                     <mat-icon>arrow_downward</mat-icon>
                 </button>
+
                 <button mat-icon-button title="Reload Flights" (click)="refreshFlights()" [disabled]="isLoading$ | async">
                     <mat-icon>sync</mat-icon>
                 </button>
+
                 <button mat-fab color="accent" *ngIf="false" (click)="addFlight()" class="flex-right" title="Add a Flight">
                     <mat-icon>add</mat-icon>
                 </button>
+
+                <!-- https://stackoverflow.com/a/49358477 - Without the hiden form field, the calendar is opened in the upper left corner. This
+                    is a hack to make it appear next to the trigger button -->
+                <mat-form-field style="visibility: hidden; width: 1px;">
+                    <input matInput [matDatepicker]="picker" (dateChange)="onDateChange($event)" style="display: none;" [value]="(date$ | async)!.toDate()"/>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+                <mat-datepicker-toggle [for]="picker" title="Go to Date"></mat-datepicker-toggle>
+
+                <button mat-icon-button [matMenuTriggerFor]="menu">
+                    <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                        <!-- <button mat-menu-item>Auto Refresh</button> -->
+                        <button mat-menu-item (click)="setDisplayMode(DisplayMode.Table)" *ngIf="(displayMode$ | async) != DisplayMode.Table">
+                            <mat-icon>table_view</mat-icon> Table View
+                        </button>
+                        <button mat-menu-item title="Card View" (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
+                            <mat-icon class="material-icons-outlined">view_agenda</mat-icon> Card View
+                        </button>
+                </mat-menu>
                 <!-- Display Mode -->
-                <button mat-icon-button title="Table View" (click)="setDisplayMode(DisplayMode.Table)" *ngIf="(displayMode$ | async) != DisplayMode.Table">
-                    <mat-icon>table_view</mat-icon>
-                </button>
-                <button mat-icon-button title="Card View" (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
-                    <mat-icon class="material-icons-outlined">view_agenda</mat-icon>
-                </button>
+                
             </div>
             
         </div>
@@ -78,7 +97,7 @@
                 </mat-card-title>
                 <mat-card-content>
                     
-                    <span>Duration: {{ flight.duration != null ? formatDuration(flight.duration) : "Unknown" }}</span>
+                    <span>Duration: {{ flight.duration != null ? (flight.duration | flightDuration) : "Unknown" }}</span>
                     <span class="ms-3">Release Height: {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft MSL" : "Unknown" }}</span>
                 </mat-card-content>
             </mat-card>
@@ -110,13 +129,21 @@
                     <!-- Duration Column -->
                     <ng-container matColumnDef="duration">
                         <th mat-header-cell *matHeaderCellDef> Duration </th>
-                        <td mat-cell *matCellDef="let flight"> {{flight.duration != null ? formatDuration(flight.duration) : "Unknown"}} </td>
+                        <td mat-cell *matCellDef="let flight">
+                            <appFlightDuration [seconds]="flight.duration" defaultText="Unknown"></appFlightDuration>
+                        </td>
                     </ng-container>
 
                     <!-- Release Height Column -->
                     <ng-container matColumnDef="releaseHeight">
                         <th mat-header-cell *matHeaderCellDef> Release Height (MSL) </th>
                         <td mat-cell *matCellDef="let flight"> {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft" : "Unknown" }} </td>
+                    </ng-container>
+
+                    <!-- Pilots Column -->
+                    <ng-container matColumnDef="pilots">
+                        <th mat-header-cell *matHeaderCellDef> Pilot(s) </th>
+                        <td mat-cell *matCellDef="let flight"> {{ formatPilot(flight) }} </td>
                     </ng-container>
 
                     <!-- Towplane Column -->
@@ -138,15 +165,16 @@
                     </ng-container>
                     
 
-                    <tr mat-header-row *matHeaderRowDef="columns"></tr>
-                    <tr mat-row *matRowDef="let row; let even = even; columns: columns;"
-                        [class.clickable]="row.flightId"
+                    <tr mat-header-row *matHeaderRowDef="columns$ | async"></tr>
+                    <tr mat-row *matRowDef="let row; let even = even; columns: columns$ | async;"
+                        [class.clickable]="!!row.flightId"
                         [routerLink]="row.flightId ? ['/flights', row.flightId] : null"
                         [class.accent]="even"
+                        [class.my-flight]="isMyFlight(row) | async"
                     ></tr>
 
                     <tr class="mat-row" *matNoDataRow>
-                        <td class="mat-cell" [attr.colspan]="columns.length">
+                        <td class="mat-cell" [attr.colspan]="(columns$ | async)!.length">
                           No flights on this date.
                         </td>
                     </tr>
@@ -170,13 +198,17 @@
 </ng-template>
 
 <ng-template #moreButton let-flight="flight">
-    <button mat-icon-button [matMenuTriggerFor]="menu">
+    <button mat-icon-button [matMenuTriggerFor]="menu" [disabled]="!flight.flightId">
         <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #menu="matMenu">
         <ng-container *ngIf="flight.flightId">
-            <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="user$ | async as user">Add to Logbook</button>
-            <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+            <ng-container *ngIf="user$ | async as user">
+                <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="!isUserOnFlight(flight, user)">Add to My Logbook</button>
+                <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
+                <button mat-menu-item (click)="assignPilots(flight)" *ngIf="canAssignPilots$ | async">Assign Pilots</button>
+                <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
+            </ng-container>
         </ng-container>
         <!-- <button mat-menu-item (click)="uploadIgc(flight)" *ngIf="!flight.igcFileName">Upload IGC File</button> -->
     </mat-menu>

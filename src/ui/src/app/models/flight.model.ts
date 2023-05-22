@@ -12,6 +12,7 @@ export interface Flight {
     towFlight: Flight | null;
     statistics: Statistics | null;
     waypoints: Waypoint[] | null;
+    occupants: Occupant[] | null;
 }
 
 export interface Aircraft {
@@ -53,4 +54,11 @@ export interface LogBookEntry {
     flight: Flight;
     flightNumber: number | null;
     remarks: string | null;
+}
+
+export interface Occupant {
+    name: string;
+    flightNumber: number | null;
+    notes: string | null;
+    userId: string | null;
 }
