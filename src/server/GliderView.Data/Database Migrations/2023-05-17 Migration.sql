@@ -129,3 +129,9 @@ CREATE TYPE dbo.Statistic AS TABLE (
 	StatisticId INT NOT NULL
 	, [Value] FLOAT NULL
 );
+
+GO
+
+GRANT DELETE ON dbo.Occupant TO [gliderViewer]
+
+GO
