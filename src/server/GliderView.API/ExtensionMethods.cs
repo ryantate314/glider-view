@@ -17,5 +17,11 @@ namespace GliderView.API
                 ? null
                 : Guid.Parse(stringId);
         }
+
+        public static bool HasScope(this ClaimsPrincipal user, string scope)
+        {
+            string[] scopes = user.Claims.FirstOrDefault(x => x.Type == "Scopes")?.Value.Split(",") ?? new string[] { };
+            return scopes.Contains(scope, StringComparer.OrdinalIgnoreCase);
+        }
     }
 }

@@ -11,7 +11,11 @@ namespace GliderView.Service.Models
         public int? ReleaseHeight { get; set; }
         public int? MaxAltitude { get; set; }
         public int? AltitudeGained { get; set; }
+        /// <summary>
+        /// Kilometers
+        /// </summary>
         public float? DistanceTraveled { get; set; }
         public int? PatternEntryAltitude { get; set; }
+        public float? MaxDistanceFromField { get; set; }
     }
 }

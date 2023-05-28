@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { InvitationToken, Role, User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user.service';
 import { Location } from '@angular/common';
@@ -15,24 +15,38 @@ export class AddUserModalComponent implements OnInit {
   public form: FormGroup;
   public Roles = Role;
 
-  private user: User | null = null;
+  public user: User | null = null;
   public token: string | null = null;
 
   public submitted: boolean = false;
 
   public error: string | null = null;
 
+  public isEditing: boolean = false;
+
   constructor(
+    @Inject(MAT_DIALOG_DATA) data: { user: User } | null,
     fb: FormBuilder,
     private userService: UserService,
     private matDialogRef: MatDialogRef<AddUserModalComponent>,
     private location: Location
   ) {
+
+    if (data?.user) {
+      this.user = data.user;
+      this.isEditing = true;
+    }
+
+    const email = data?.user?.email ?? "";
+    const name = data?.user?.name ?? "";
+    const role = data?.user?.role ?? Role.User;
+
     this.form = fb.group({
-      'name': [],
-      'email': [],
-      'role': [Role.User, []]
+      'name': [name],
+      'email': [email],
+      'role': [role, []]
     });
+
   }
 
   ngOnInit(): void {
@@ -54,19 +68,36 @@ export class AddUserModalComponent implements OnInit {
     if (this.form.valid) {
       this.error = null;
 
-      this.userService.createUser(
-        this.email.value,
-        this.name.value,
-        this.role.value
-      ).subscribe({
-        next: user => {
-          this.submitted = true;
-          this.user = user;
-        },
-        error: err => {
-          this.error = "Error creating user.";
-        }
-      });
+      if (this.user?.userId) {
+        const updatedUser = {
+          ...this.user,
+          email: this.email.value,
+          name: this.name.value,
+          role: this.role.value
+        };
+        this.userService.updateUser(updatedUser).subscribe({
+          next: user => {
+            this.submitted = true;
+            this.user = user;
+          },
+          error: err => this.error = "Error updating user."
+        })
+      }
+      else {
+        this.userService.createUser(
+          this.email.value,
+          this.name.value,
+          this.role.value
+        ).subscribe({
+          next: user => {
+            this.submitted = true;
+            this.user = user;
+          },
+          error: err => {
+            this.error = "Error creating user.";
+          }
+        });
+      }
     }
   }
 
@@ -86,7 +117,7 @@ export class AddUserModalComponent implements OnInit {
   }
 
   onClose() {
-    this.matDialogRef.close();
+    this.matDialogRef.close(this.submitted);
   }
 
 }

@@ -199,5 +199,10 @@ namespace GliderView.Service
         {
             return _userRepository.DeleteUser(userId);
         }
+
+        public Task UpdateUser(User user)
+        {
+            return _userRepository.UpdateUser(user);
+        }
     }
 }

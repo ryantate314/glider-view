@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, switchMap } from 'rxjs';
+import { filter, Observable, switchMap, tap } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user.service';
 import { AddUserModalComponent } from '../add-user-modal/add-user-modal.component';
@@ -31,13 +31,29 @@ export class PilotsComponent implements OnInit {
   }
 
   public createUser() {
-    this.dialog.open(AddUserModalComponent)
+    this.dialog.open(AddUserModalComponent, {
+      panelClass: 'dialog-md'
+    })
       .afterClosed()
+      .pipe(
+        filter(x => x)
+      )
       .subscribe(() => this.refreshUsers());
   }
 
   public onEditUser(user: User) {
-
+    this.dialog.open(AddUserModalComponent, {
+      data: {
+        user
+      },
+      panelClass: 'dialog-md'
+    }).afterClosed()
+    .pipe(
+      filter(x => x)
+    )
+    .subscribe(() => {
+      this.refreshUsers();
+    })
   }
 
   public onDeleteUser(user: User) {

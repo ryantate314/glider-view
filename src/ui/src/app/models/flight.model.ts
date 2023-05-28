@@ -2,6 +2,9 @@ export interface Flight {
     flightId: string | null;
     startDate: Date;
     endDate: Date | null;
+    /**
+     * Seconds
+     */
     duration: number | null;
     igcFileName: string | null;
     
@@ -9,6 +12,7 @@ export interface Flight {
     towFlight: Flight | null;
     statistics: Statistics | null;
     waypoints: Waypoint[] | null;
+    occupants: Occupant[] | null;
 }
 
 export interface Aircraft {
@@ -32,15 +36,29 @@ export enum FlightEventType {
 }
 
 export interface Statistics {
+    /**
+     * Meters
+     */
     distanceTraveled: number | null;
+    /**
+     * Meters MSL
+     */
     releaseHeight: number | null;
     altitudeGained: number | null;
     maxAltitude: number | null;
     patternEntryAltitude: number | null;
+    maxDistanceFromField: number | null;
 }
 
 export interface LogBookEntry {
     flight: Flight;
     flightNumber: number | null;
     remarks: string | null;
+}
+
+export interface Occupant {
+    name: string;
+    flightNumber: number | null;
+    notes: string | null;
+    userId: string | null;
 }

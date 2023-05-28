@@ -1,12 +1,18 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { combineLatest, map, merge, Observable, shareReplay, Subject, switchMap, withLatestFrom } from 'rxjs';
-import { Flight, FlightEventType, Waypoint } from 'src/app/models/flight.model';
+import { combineLatest, filter, iif, map, merge, Observable, of, shareReplay, startWith, Subject, switchMap, take, throwError, withLatestFrom } from 'rxjs';
+import { Flight, FlightEventType, Occupant, Waypoint } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as leaflet from 'leaflet';
 import { ChartData, ChartOptions } from 'chart.js';
 import * as moment from 'moment';
 import { LineAnnotationOptions } from 'chartjs-plugin-annotation';
+import { UnitUtils } from 'src/app/unit-utils';
+import { AuthService } from 'src/app/services/auth.service';
+import { TitleService } from 'src/app/services/title.service';
+import { Scopes, User } from 'src/app/models/user.model';
+import { MatDialog } from '@angular/material/dialog';
+import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
 
 const baseChartOptions: ChartOptions<'line'> = {
   plugins: {
@@ -70,16 +76,30 @@ const formatAltitudeLabel = (date: Date, flightStart: Date) =>
   styleUrls: ['./flight.component.scss']
 })
 export class FlightComponent implements OnInit, AfterViewInit {
-
+  public user$: Observable<User>;
   public flight$: Observable<Flight>;
   public chartConfig$: Observable<{ data: ChartData<'line'>, options: ChartOptions<'line'> }>;
+  public userOnFlight$: Observable<boolean>;
+  public canAssignPilots$: Observable<boolean>;
 
   private map: leaflet.Map | null = null;
   private altitudeChartData$: Observable<ChartData<'line'>>;
   private altitudeChartOptions$: Observable<ChartOptions<'line'>>;
   private updateStatistics$ = new Subject<void>();
+  private refreshFlight$ = new Subject<void>();
 
-  constructor(private flightService: FlightService, private route: ActivatedRoute) {
+  constructor(
+    private flightService: FlightService,
+    private route: ActivatedRoute,
+    private auth: AuthService,
+    private title: TitleService,
+    private dialog: MatDialog
+  ) {
+
+    this.user$ = this.auth.user$.pipe(
+      filter(x => x != null),
+      map(x => x!)
+    );
 
     const flightId$ = this.route.params.pipe(
       map(params => params["id"])
@@ -87,16 +107,38 @@ export class FlightComponent implements OnInit, AfterViewInit {
 
     const updateStatsRequest$ = this.updateStatistics$.pipe(
       withLatestFrom(flightId$),
-      switchMap(([_, id]) => this.flightService.recalculateStatistics(id))
+      switchMap(([_, id]) => this.flightService.recalculateStatistics(id)),
+      startWith(null)
     );
 
-    this.flight$ = merge(
+    const includes$ = this.auth.isAuthenticated$.pipe(
+      map(isAuthenticated => isAuthenticated ?
+          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_WAYPOINTS}`
+        :  `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_WAYPOINTS}`
+      )
+    );
+
+    this.flight$ = combineLatest([
       flightId$,
-      updateStatsRequest$
-    ).pipe(
-      withLatestFrom(flightId$),
-      switchMap(([_, flightId]) => this.flightService.getFlight(flightId)),
+      includes$,
+      // Used only for triggering a reload
+      updateStatsRequest$,
+      this.refreshFlight$.pipe(startWith(null))
+    ]).pipe(
+      switchMap(([flightId, includes]) =>
+        this.flightService.getFlight(
+          flightId,
+          includes
+        )
+      ),
       shareReplay(1)
+    );
+
+    this.userOnFlight$ = combineLatest([
+      this.user$,
+      this.flight$
+    ]).pipe(
+      map(([user, flight]) => (flight.occupants && user && flight.occupants.some(x => x.userId == user.userId)) ?? false)
     );
 
     this.altitudeChartData$ = this.flight$.pipe(
@@ -166,20 +208,28 @@ export class FlightComponent implements OnInit, AfterViewInit {
         options: options
       }))
     );
+
+    this.canAssignPilots$ = this.auth.hasScope(Scopes.AssignPilots);
   }
 
   ngOnInit(): void {
+    this.flight$.pipe(
+      take(1)
+    ).subscribe(flight =>
+      this.title.setTitle(`${flight.aircraft?.description ?? 'Unknown'} Flight on ${flight.startDate.toDateString()}`)
+    );
   }
 
   public mToFt(value: number | undefined | null): number | null {
     return !value ? null : Math.round(value * 3.281);
   }
 
+  // Kilometers to nautical miles
   public kmToM(value: number | undefined | null): number | null {
     if (value === null || value === undefined)
       return null;
-
-    return Math.round(this.mToFt(value * 1000)! / 5280 * 10) / 10;    
+    
+    return Math.round(UnitUtils.kmToNm(value)! * 10) / 10;    
   }
 
   ngAfterViewInit(): void {
@@ -248,6 +298,43 @@ export class FlightComponent implements OnInit, AfterViewInit {
       data.push(speed);
     }
     return data;
+  }
+
+  public isUserOnFlight(flight: Flight, user: User) {
+    return flight.occupants != null && user != null && flight.occupants.some(x => x.userId = user.userId);
+  }
+
+  public addToLogbook(flight: Flight, user: User) {
+
+    this.flightService.addPilot(flight.flightId!, user.userId)
+      .subscribe({
+        next: () => {
+          this.refreshFlight$.next();
+        },
+        error: () => {
+          alert("Error adding to logbook.");
+        }
+      });
+  }
+
+  public removePilot(flightId: string, userId: string) {
+    this.flightService.removePilot(flightId, userId!)
+      .subscribe(() => this.refreshFlight$.next());
+  }
+
+  public assignPilots(flight: Flight) {
+    this.dialog.open(
+      AssignPilotModalComponent,
+      {
+        data: {
+          flight
+        },
+        panelClass: 'dialog-md'
+      }
+    ).afterClosed()
+    .pipe(
+      filter(x => x)
+    ).subscribe(() => this.refreshFlight$.next());
   }
 
 }

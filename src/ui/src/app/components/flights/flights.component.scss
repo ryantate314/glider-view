@@ -65,4 +65,15 @@ table {
     tr.accent {
         background-color: #f0f0f0;
     }
+
+    tr.my-flight {
+        td {
+            font-weight: bolder;
+        }
+    }
+}
+
+.mat-datepicker-toggle {
+    /* Remove the transparency added by default */
+    color: inherit;
 }

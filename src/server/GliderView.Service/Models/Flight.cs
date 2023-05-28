@@ -5,6 +5,9 @@
         public Guid FlightId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        /// <summary>
+        /// Seconds
+        /// </summary>
         public int Duration
         {
             get
@@ -18,5 +21,6 @@
         public Aircraft? Aircraft { get; set; }
         public Flight? TowFlight { get; set; }
         public FlightStatistics? Statistics { get; set; }
+        public List<Occupant>? Occupants { get; set; }
     }
 }

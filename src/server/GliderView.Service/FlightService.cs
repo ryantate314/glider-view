@@ -1,5 +1,6 @@
 ﻿using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
+using GliderView.Service.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,6 +52,16 @@ namespace GliderView.Service
         public Task RemovePilot(Guid flightId, Guid pilotId)
         {
             return _repo.RemovePilot(flightId, pilotId);
+        }
+
+        public Task<IEnumerable<Occupant>> GetPilotsOnFlight(Guid flightId)
+        {
+            return _repo.GetPilotsOnFlight(flightId);
+        }
+
+        public Task<Dictionary<Guid, IEnumerable<Occupant>>> GetPilotsOnFlights(IEnumerable<Guid> flightIds)
+        {
+            return _repo.GetPilotsOnFlights(flightIds);
         }
     }
 }

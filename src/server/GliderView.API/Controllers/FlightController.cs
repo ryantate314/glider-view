@@ -10,17 +10,56 @@ namespace GliderView.API.Controllers
     public class FlightController : Controller
     {
         private const string INCLUDE_WAYPOINTS = "waypoints";
+        private const string INCLUDE_STATISTICS = "statistics";
+        private const string INCLUDE_PILOTS = "occupants";
 
         [Obsolete]
         private readonly IFlightRepository _flightRepo;
         private readonly IIgcFileRepository _igcRepo;
         private readonly FlightService _flightService;
+        private readonly IncludeHandler<Flight> _includeHandler;
 
-        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService)
+        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService, ILogger<FlightController> logger)
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
             _flightService = flightService;
+
+            _includeHandler = new IncludeHandler<Flight>(logger)
+                .AddHandler(x => x.Waypoints, config =>
+                {
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Waypoints = await _flightRepo.GetWaypoints(flight.FlightId);
+                    config.MultipleUpdateFunction = flights => throw new InvalidOperationException("Retrieving waypoints for multiple flights is not supported.");
+                })
+                .AddHandler(x => x.Statistics, config =>
+                {
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Statistics = await _flightRepo.GetStatistics(flight.FlightId);
+                    config.MultipleUpdateFunction = async flights =>
+                    {
+                        var stats = await _flightRepo.GetStatistics(flights.Select(x => x.FlightId));
+
+                        foreach (var flight in flights)
+                            if (stats.ContainsKey(flight.FlightId))
+                                flight.Statistics = stats[flight.FlightId];
+                    };
+                })
+                .AddHandler(x => x.Occupants, config =>
+                {
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Occupants = (await _flightService.GetPilotsOnFlight(flight.FlightId))
+                            .ToList();
+                    config.MultipleUpdateFunction = async flights =>
+                    {
+                        var pilots = await _flightService.GetPilotsOnFlights(flights.Select(x => x.FlightId));
+
+                        foreach (var flight in flights)
+                            if (pilots.ContainsKey(flight.FlightId))
+                                flight.Occupants = pilots[flight.FlightId]
+                                    .ToList();
+                    };
+                });
         }
 
         [HttpGet]
@@ -29,7 +68,13 @@ namespace GliderView.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(search.Includes, INCLUDE_PILOTS))
+                return Unauthorized("You must be logged in to see a list of pilots.");
+
             List<Flight> flights = await _flightRepo.GetFlights(search);
+
+            await _includeHandler.AddIncludedProperties(flights, search.Includes);
+           
             return Ok(flights);
         }
 
@@ -39,23 +84,20 @@ namespace GliderView.API.Controllers
             if (flightId == Guid.Empty)
                 return BadRequest("Flight ID cannot be empty.");
 
+            if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(includes, INCLUDE_PILOTS))
+                return Unauthorized("You must be logged in to see a list of pilots.");
+
             Flight? flight = await _flightRepo.GetFlight(flightId);
 
             if (flight == null)
                 return NotFound();
 
-            if (!String.IsNullOrEmpty(includes))
-            {
-                var include = includes.Split(",");
-                if (include.Contains(INCLUDE_WAYPOINTS, StringComparer.InvariantCultureIgnoreCase))
-                {
-                    flight.Waypoints = await _flightRepo.GetWaypoints(flightId);
-                }
-            }
+            await _includeHandler.AddIncludedProperties(flight, includes);
 
             return Ok(flight);
         }
 
+        [Authorize]
         [ResponseCache(Duration = 24*60*60)]
         [HttpGet("{flightId}/igc")]
         public async Task<IActionResult> DownloadIgcFile([FromRoute] Guid flightId)
@@ -83,6 +125,7 @@ namespace GliderView.API.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("{flightId}/recalculate-statistics")]
         public async Task<IActionResult> RecalculateStatistics([FromRoute] Guid flightId)
         {
@@ -97,6 +140,8 @@ namespace GliderView.API.Controllers
         {
             if (pilotId == null)
                 pilotId = User.GetUserId();
+            else if (pilotId != User.GetUserId() && !User.HasScope(Scopes.AssignPilots))
+                return Unauthorized();
 
             await _flightService.AddPilot(flightId, pilotId!.Value);
 
@@ -105,12 +150,40 @@ namespace GliderView.API.Controllers
 
         [Authorize]
         [HttpDelete("{flightId}/pilots/{pilotId}")]
-        public async Task<IActionResult> AddPilot([FromRoute] Guid flightId, [FromRoute] Guid pilotId)
+        public async Task<IActionResult> RemovePilot([FromRoute] Guid flightId, [FromRoute] Guid pilotId)
         {
+            if (pilotId != User.GetUserId() && !User.HasScope(Scopes.AssignPilots))
+                return Unauthorized();
+
             // TODO authorize this user to the user ID
             await _flightService.RemovePilot(flightId, pilotId);
 
             return Ok();
         }
+
+        [Authorize(Scopes.AssignPilots)]
+        [HttpPut("{flightId}/pilots")]
+        public async Task<IActionResult> UpdatePilots([FromRoute] Guid flightId, [FromBody] List<Occupant> newOccupants)
+        {
+            IEnumerable<Occupant> currentOccupants = await _flightService.GetPilotsOnFlight(flightId);
+
+            foreach (var occupant in currentOccupants)
+            {
+                if (!newOccupants.Any(x => x.UserId == occupant.UserId))
+                {
+                    await _flightService.RemovePilot(flightId, occupant.UserId);
+                }
+            }
+            foreach (var newOccupant in newOccupants)
+            {
+                if (!currentOccupants.Any(x => x.UserId == newOccupant.UserId))
+                {
+                    await _flightService.AddPilot(flightId, newOccupant.UserId);
+                }
+            }
+
+            return NoContent();
+        }
+
     }
 }

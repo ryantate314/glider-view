@@ -24,6 +24,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import {MatAutocompleteModule} from '@angular/material/autocomplete';
 
 import { FlightComponent } from './components/flight/flight.component';
 import { NgChartsModule } from 'ng2-charts';
@@ -40,6 +43,10 @@ import { AddUserModalComponent } from './components/add-user-modal/add-user-moda
 import { LogbookComponent } from './components/logbook/logbook.component';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { QRCodeModule } from 'angularx-qrcode';
+import { LeaderboardComponent } from './components/leaderboard/leaderboard.component';
+import { FlightDurationPipe } from './pipes/flight-duration.pipe';
+import { FlightDurationDirective } from './directives/flight-duration.directive';
+import { AssignPilotModalComponent } from './components/assign-pilot-modal/assign-pilot-modal.component';
 
 Chart.register(Annotation);
 
@@ -70,7 +77,11 @@ Marker.prototype.options.icon = iconDefault;
     PilotsComponent,
     AddUserModalComponent,
     LogbookComponent,
-    WelcomeComponent
+    WelcomeComponent,
+    LeaderboardComponent,
+    FlightDurationPipe,
+    FlightDurationDirective,
+    AssignPilotModalComponent,
   ],
   imports: [
     BrowserModule,
@@ -96,6 +107,9 @@ Marker.prototype.options.icon = iconDefault;
     MatSnackBarModule,
     MatTableModule,
     MatSortModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatAutocompleteModule,
 
     NgChartsModule,
   ],

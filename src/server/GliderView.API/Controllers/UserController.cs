@@ -207,6 +207,17 @@ namespace GliderView.API.Controllers
             return Ok(userDto);
         }
 
+        [Authorize(Scopes.CreateUser)]
+        [HttpPut("{userId}")]
+        public async Task<IActionResult> UpdateUser([FromBody] User user)
+        {
+            await _service.UpdateUser(user);
+
+            var updatedUser = await _service.GetUser(user.UserId);
+
+            return Ok(updatedUser);
+        }
+
         [AllowAnonymous]
         [HttpPost("logout")]
         public IActionResult LogOut()
@@ -244,5 +255,7 @@ namespace GliderView.API.Controllers
 
             return Ok(logEntries);
         }
+
+        
     }
 }

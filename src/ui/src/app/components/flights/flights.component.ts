@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, filter, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -10,12 +10,15 @@ import { UnitUtils } from 'src/app/unit-utils';
 import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
 import * as moment from 'moment';
 import { SettingsService } from 'src/app/services/settings.service';
-import { User } from 'src/app/models/user.model';
+import { Scopes, User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort, Sort } from '@angular/material/sort';
 import { DisplayMode } from 'src/app/models/display-mode';
+import { TitleService } from 'src/app/services/title.service';
+import { MatDatepickerInputEvent } from '@angular/material/datepicker';
+import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
 
 interface WeekDay {
   abbreviation: string;
@@ -40,10 +43,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public isLoading$ = new BehaviorSubject<boolean>(true);
   public user$: Observable<User | null>;
 
+  public canAssignPilots$: Observable<boolean>;
+
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
 
-  public columns: string[] = ['time', 'glider', 'releaseHeight', 'duration', 'towplane', 'actions'];
+  private allColumns = ['time', 'glider', 'releaseHeight', 'duration', 'pilots', 'towplane', 'actions'];
+  public columns$: Observable<string[]>;
 
   public displayMode$ = new ReplaySubject<DisplayMode>(1);
 
@@ -56,8 +62,11 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private router: Router,
     private settings: SettingsService,
     private auth: AuthService,
-    private admiralSnackbar: MatSnackBar
+    private admiralSnackbar: MatSnackBar,
+    private title: TitleService
   ) {
+
+    this.user$ = this.auth.user$;
 
     this.sortDirection$.next(
       this.settings.flightSortOrder
@@ -84,19 +93,35 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       shareReplay(1)
     );
 
+    this.columns$ = this.auth.isAuthenticated$.pipe(
+      map(isAuthenticated => isAuthenticated ?
+        this.allColumns
+        : this.allColumns.filter(x => x != "pilots")
+      )
+    );
+
+    const includes$ = this.auth.isAuthenticated$.pipe(
+      map(isAuthenticated => isAuthenticated ?
+          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS}`
+        : FlightService.INCLUDE_STATISTICS
+      )
+    );
+
     this.allFlights$ = combineLatest([
       week$,
-      this.refreshFlights$.pipe(startWith(null))
+      this.refreshFlights$.pipe(startWith(null)),
+      includes$
     ]).pipe(
       tap(_ => {
         this.isLoading$.next(true);
       }),
-      switchMap(([date, _]) =>
+      switchMap(([date, _, includes]) =>
         this.flightService.getFlights(
           date.toDate(),
           date.clone()
             .endOf('isoWeek')
-            .toDate())
+            .toDate(),
+          includes)
       ),
       tap(_ => {
         this.isLoading$.next(false);
@@ -147,10 +172,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
                 altitudeGained: null,
                 distanceTraveled: null,
                 maxAltitude: null,
-                patternEntryAltitude: null
+                patternEntryAltitude: null,
+                maxDistanceFromField: null
               },
               towFlight: flight,
-              waypoints: null
+              waypoints: null,
+              occupants: null
             }
           );
       })
@@ -163,7 +190,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       map(([flights, date]) => this.groupFlightsIntoDays(date, flights))
     );
 
-    this.user$ = this.auth.user$;
+    this.canAssignPilots$ = this.auth.hasScope(Scopes.AssignPilots);
   }
 
   private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
@@ -190,7 +217,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    
+    this.date$.pipe(
+      map(date => date.isSame(moment(), 'day') ?
+        'Flights'
+        : `Flights - ${date.format('M/D/YYYY')}`)
+    ).subscribe(title =>
+      this.title.setTitle(title)
+    );
   }
 
   ngAfterViewInit(): void {
@@ -215,11 +248,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     alert("Not implemented");
   }
 
-  public formatDuration(seconds: number): string {
-    const duration = moment.duration(seconds, 'second');
-    return moment.utc(duration.as('milliseconds'))
-      .format('HH:mm:ss');
-      
+  public calculateHobsTime(seconds: number | null) {
+    if (seconds == null)
+      return null;
+    return Math.round(seconds / 60.0 / 60.0 * 10) / 10.0;
   }
 
   public addFlight() {
@@ -241,6 +273,11 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   debugRow(row: any) {
     console.log(row);
+  }
+
+  public onDateChange(event: MatDatepickerInputEvent<Date>) {
+    const newDate = event.value
+    this.router.navigate(["/flights/dashboard", `${moment(newDate!).format('YYYY-MM-DD')}`])
   }
 
 
@@ -300,7 +337,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   }
 
   public mToFt(value: number | undefined | null): number | null {
-    return UnitUtils.mToFt(value);
+    return value ?
+      Math.round(UnitUtils.mToFt(value)!)
+      : null;
   }
 
   public setDisplayMode(mode: DisplayMode) {
@@ -313,6 +352,50 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       this.admiralSnackbar.open("Flight added to your logbook.", "Close", {
         duration: 3000
       });
+
+      this.refreshFlights$.next(null);
     });
+  }
+
+  public formatPilot(flight: Flight): string {
+    let pilots = "";
+
+    if (flight.occupants) {
+      if (flight.occupants.length == 1)
+        pilots = flight.occupants[0].name;
+      else
+        pilots = flight.occupants[0].name + " +" + (flight.occupants.length - 1);
+    }
+
+    return pilots;
+  }
+
+  public isMyFlight(flight: Flight): Observable<boolean> {
+    if (!flight.occupants)
+      return of(false);
+
+    return this.user$.pipe(
+      map(user => user == null ?
+        false
+        : flight.occupants!.some(x => x.userId == user.userId))
+    );
+  }
+
+  public assignPilots(flight: Flight) {
+    this.dialog.open(AssignPilotModalComponent, {
+      data: {
+        flight
+      },
+      panelClass: "dialog-md"
+    })
+    .afterClosed()
+    .pipe(
+      filter((x: boolean) => x),
+    )
+    .subscribe(() => this.refreshFlights());
+  }
+
+  public isUserOnFlight(flight: Flight, user: User) {
+    return flight.occupants != null && user != null && flight.occupants.some(x => x.userId = user.userId);
   }
 }

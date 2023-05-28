@@ -42,3 +42,19 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
       width: 70%;
   }
 }
+
+.dialog-md .mat-dialog-container {
+  width: 90vw;
+}
+
+@include media-breakpoint-up(md) {
+  .dialog-md .mat-dialog-container {
+    width: 40vw;
+  }
+}
+
+@include media-breakpoint-up(lg) {
+  .dialog-md .mat-dialog-container {
+    width: 25vw;
+  }
+}
