@@ -4,6 +4,7 @@ import { Observable, of, switchMap } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
+import { TitleService } from 'src/app/services/title.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,8 +18,11 @@ export class ProfileComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private dialog: MatDialog,
+    title: TitleService
   ) {
     this.user$ = this.auth.user$;
+
+    title.setTitle("User Profile");
   }
 
   ngOnInit(): void {
@@ -26,7 +30,10 @@ export class ProfileComponent implements OnInit {
 
   public changePassword() {
     this.dialog.open(
-      ChangePasswordModalComponent
+      ChangePasswordModalComponent,
+      {
+        panelClass: "dialog-md"
+      }
     )
       .afterClosed()
       .pipe(

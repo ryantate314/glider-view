@@ -5,6 +5,7 @@ import { filter, Observable, switchMap, tap } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user.service';
 import { AddUserModalComponent } from '../add-user-modal/add-user-modal.component';
+import { TitleService } from 'src/app/services/title.service';
 
 @Component({
   selector: 'app-pilots',
@@ -18,9 +19,12 @@ export class PilotsComponent implements OnInit {
   constructor(
     private userService: UserService,
     private dialog: MatDialog,
-    private snackbar: MatSnackBar
+    private snackbar: MatSnackBar,
+    title: TitleService
   ) {
     this.users$ = this.userService.getAll();
+
+    title.setTitle("Pilots");
   }
 
   private refreshUsers() {

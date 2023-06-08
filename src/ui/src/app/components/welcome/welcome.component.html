@@ -7,14 +7,20 @@
             <input matInput type="email" required="required" maxlength="100" formControlName="email" />
         </mat-form-field>
     
-        <mat-form-field appearance="fill">
+        <mat-form-field appearance="fill" [class.mb-4]="password.touched && password.hasError('password')">
             <mat-label>Password</mat-label>
             <input matInput type="password" required="required" maxlength="100" formControlName="password" />
+            <mat-error *ngIf="password.hasError('password')">
+                {{ password.errors!["password"] }}
+            </mat-error>
         </mat-form-field>
     
-        <mat-form-field appearance="fill">
+        <mat-form-field appearance="fill" [class.mb-4]="confirmPassword.touched && confirmPassword.hasError('passwords-match')">
             <mat-label>Confirm Password</mat-label>
             <input matInput type="password" required="required" maxlength="100" formControlName="confirmPassword" />
+            <mat-error *ngIf="confirmPassword.hasError('passwords-match')">
+                Passwords do not match.
+            </mat-error>
         </mat-form-field>
     
         <button type="submit" mat-raised-button color="primary">Submit</button>

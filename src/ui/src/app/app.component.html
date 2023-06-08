@@ -34,7 +34,9 @@
             <a mat-menu-item [routerLink]="['/user/logbook']">Logbook</a>
             <button mat-menu-item (click)="logOut()">Log Out</button>
         </ng-container>
-        <a mat-menu-item href="/igc-files/" target="_blank">IGC File Repository</a>
+        <a mat-menu-item *ngIf="canViewAllUsers$ | async" [routerLink]="['/pilots']">Pilots</a>
+        <a mat-menu-item *ngIf="user$ | async" [routerLink]="['/leaderboard']">Leaderboard</a>
+        <a *ngIf="canViewAllUsers$ | async" href="/igc-files/" target="_blank" mat-menu-item>IGC File Repository</a>
     </mat-menu>
     
 </mat-toolbar>

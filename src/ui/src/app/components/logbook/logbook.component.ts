@@ -4,6 +4,7 @@ import { combineLatest, iif, map, Observable, of, startWith, Subject, switchMap,
 import { LogBookEntry } from 'src/app/models/flight.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { FlightService } from 'src/app/services/flight.service';
+import { TitleService } from 'src/app/services/title.service';
 import { UserService } from 'src/app/services/user.service';
 import { UnitUtils } from 'src/app/unit-utils';
 
@@ -28,8 +29,12 @@ export class LogbookComponent implements OnInit {
     private userService: UserService,
     private route: ActivatedRoute,
     private auth: AuthService,
-    private flightService: FlightService
+    private flightService: FlightService,
+    title: TitleService
   ) {
+
+    // TODO: Consider adding the username to the title
+    title.setTitle("Logbook");
 
     this.userId$ = this.route.params.pipe(
       switchMap(params => 

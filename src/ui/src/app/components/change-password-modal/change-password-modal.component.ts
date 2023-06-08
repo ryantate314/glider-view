@@ -1,6 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
+import { passwordComplexityValidator } from 'src/app/utils/password-utils';
+
+const passwordsMatch = (control: AbstractControl) => {
+  const form = control.parent;
+  if (!form)
+    return null;
+
+  const password = form.get('newPassword')?.value;
+  if (control.value != password)
+    return {
+      'passwords-match': true
+    };
+
+  return null;
+};
 
 @Component({
   selector: 'app-change-password-modal',
@@ -18,21 +33,17 @@ export class ChangePasswordModalComponent implements OnInit {
   ) {
     this.form = fb.group({
       "currentPassword": ["", []],
-      "newPassword": ["", []],
-      "newPasswordConfirm": ["", []],
-    }, {
-      validators: [
-        (form: AbstractControl) => {
-          const newPassword = form.get('newPassword')!;
-          const newPasswordConfirm = form.get('newPasswordConfirm')!;
-
-          if (newPasswordConfirm.value && newPassword.value != newPasswordConfirm.value)
-            newPasswordConfirm.setErrors({ passwordMismatch: true });
-
-          return null;
-        }
-      ]
+      "newPassword": ["", [
+        passwordComplexityValidator
+      ]],
+      "newPasswordConfirm": ["", [
+        passwordsMatch
+      ]],
     });
+
+    this.newPassword.valueChanges.subscribe(() =>
+      this.newPasswordConfirm.updateValueAndValidity()
+    );
   }
 
   public get currentPassword(): AbstractControl {

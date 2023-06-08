@@ -4,7 +4,9 @@ import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/fo
 import { ActivatedRoute, Router } from '@angular/router';
 import { map, Observable, of, switchMap, withLatestFrom } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
+import { TitleService } from 'src/app/services/title.service';
 import { UserService } from 'src/app/services/user.service';
+import { passwordComplexityValidator } from 'src/app/utils/password-utils';
 
 const passwordsMatch = (control: AbstractControl) => {
   const form = control.parent;
@@ -15,21 +17,6 @@ const passwordsMatch = (control: AbstractControl) => {
   if (control.value != password)
     return {
       'passwords-match': true
-    };
-
-  return null;
-};
-
-const passwordComplexity = (control: AbstractControl) => {
-  const password = control.value;
-
-  if (!password)
-    return null;
-
-  if (!/[A-Z]/.test(password)
-    || !/[0-9]/.test(password))
-    return {
-      'password': true
     };
 
   return null;
@@ -52,8 +39,11 @@ export class WelcomeComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly auth: AuthService,
     private readonly router: Router,
-    fb: FormBuilder
+    fb: FormBuilder,
+    title: TitleService
   ) {
+    title.setTitle("New User Registration");
+    
     this.token$ = this.route.paramMap.pipe(
       map(x => x.get('invitationToken'))
     );
@@ -63,8 +53,7 @@ export class WelcomeComponent implements OnInit {
         Validators.email
       ]],
       'password': ['', [
-        passwordComplexity,
-        Validators.minLength(12)
+        passwordComplexityValidator
       ]],
       'confirmPassword': ['', [
         passwordsMatch

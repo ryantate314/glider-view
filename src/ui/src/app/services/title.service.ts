@@ -10,7 +10,7 @@ export class TitleService {
 
   public setTitle(title?: string) {
     const fullTitle = title
-      ? `Chilhowee Glider Viewer | ${title}`
+      ? `${title} - Chilhowee Glider Viewer`
       : 'Chilhowee Glider Viewer';
     this.title.setTitle(fullTitle);
   }

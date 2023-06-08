@@ -18,7 +18,7 @@ export class LoginComponent implements OnInit {
 
   constructor(private auth: AuthService,
     fb: FormBuilder,
-    private matDialogRef: MatDialogRef<LoginComponent>
+    private matDialogRef: MatDialogRef<LoginComponent>,
   ) {
     this.form = fb.group({
       "email": ['', [Validators.required, Validators.email]],
