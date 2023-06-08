@@ -37,6 +37,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   flex: 1 1 auto;
 }
 
+snack-bar-container.error {
+  color: red;
+}
+
 @include media-breakpoint-up(xl) {
   .w-xl-70 {
       width: 70%;

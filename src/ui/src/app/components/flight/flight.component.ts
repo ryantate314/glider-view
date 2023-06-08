@@ -13,6 +13,8 @@ import { TitleService } from 'src/app/services/title.service';
 import { Scopes, User } from 'src/app/models/user.model';
 import { MatDialog } from '@angular/material/dialog';
 import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
+import * as FileSaver from 'file-saver';
+import { SnackbarService } from 'src/app/services/snackbar.service';
 
 const baseChartOptions: ChartOptions<'line'> = {
   plugins: {
@@ -93,7 +95,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
     private route: ActivatedRoute,
     private auth: AuthService,
     private title: TitleService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private snackbar: SnackbarService
   ) {
 
     this.user$ = this.auth.user$.pipe(
@@ -335,6 +338,19 @@ export class FlightComponent implements OnInit, AfterViewInit {
     .pipe(
       filter(x => x)
     ).subscribe(() => this.refreshFlight$.next());
+  }
+
+  public downloadIgcFile(flight: Flight) {
+    this.flightService.downloadIgcFile(flight.flightId!).subscribe({
+      next: (file) => {
+        FileSaver.saveAs(file);
+      },
+      error: (error) => {
+        this.snackbar.openError(
+          "Error downloading IGC File. Please try again.",
+        );
+      }
+    });
   }
 
 }

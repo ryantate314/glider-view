@@ -1,6 +1,11 @@
 <div class="container pt-2">
     <ng-container *ngIf="flight$ | async as flight; else loading">
-        <h1>{{ flight.aircraft?.description ?? "Unknown Aircraft" }}</h1>
+        <div class="d-flex align-items-center">
+            <h1>{{ flight.aircraft?.description ?? "Unknown Aircraft" }}</h1>
+            <button mat-icon-button class="ms-auto me-lg-5" title="Download IGC File" *ngIf="user$ | async" (click)="downloadIgcFile(flight)">
+                <mat-icon>download</mat-icon>
+            </button>
+        </div>
         <p>
             <a [routerLink]="['/flights/dashboard', flight.startDate | date: 'yyyy-MM-dd']" [fragment]="flight.flightId!" title="Go to Day">{{ flight.startDate | date: 'EEE MM/dd/yyyy' }}</a>
             {{ flight.startDate | date: 'h:mm a' }} - {{ flight.endDate | date: 'h:mm a' }} (<appFlightDuration [seconds]="flight.duration"></appFlightDuration>)

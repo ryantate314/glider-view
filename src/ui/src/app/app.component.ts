@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { LoginComponent } from './components/login/login.component';
 import { Scopes, User } from './models/user.model';
 import { AuthService } from './services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,11 @@ export class AppComponent {
   /**
    *
    */
-  constructor(private dialog: MatDialog, private auth: AuthService) {
+  constructor(
+    private dialog: MatDialog,
+    private auth: AuthService,
+    private router: Router
+  ) {
     this.canViewAllUsers$ = this.auth.hasScope(Scopes.ViewAllUsers);
     this.isAuthenticated$ = this.auth.isAuthenticated$;
     this.user$ = this.auth.user$;
@@ -34,5 +39,7 @@ export class AppComponent {
 
   public logOut() {
     this.auth.logOut();
+
+    this.router.navigate(["/"]);
   }
 }
