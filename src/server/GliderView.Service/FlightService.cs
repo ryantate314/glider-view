@@ -63,5 +63,15 @@ namespace GliderView.Service
         {
             return _repo.GetPilotsOnFlights(flightIds);
         }
+
+        public async Task<Flight?> GetFlight(Guid flightId)
+        {
+            Flight? flight = await _repo.GetFlight(flightId);
+
+            if (flight == null)
+                throw new NotFoundException("Could not find flight with ID " + flightId);
+
+            return flight;
+        }
     }
 }

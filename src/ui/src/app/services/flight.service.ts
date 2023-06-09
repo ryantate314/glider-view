@@ -8,6 +8,7 @@ import { Flight, Occupant } from '../models/flight.model';
   providedIn: 'root'
 })
 export class FlightService {
+  
 
   public static readonly INCLUDE_WAYPOINTS = "waypoints";
   public static readonly INCLUDE_STATISTICS = "statistics";
@@ -84,6 +85,13 @@ export class FlightService {
     );
   }
 
+  public reloadIgcFile(flightId: string): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/flights/${flightId}/reprocess`,
+      null
+    );
+  }
+
   public addPilot(flightId: string, userId: string): Observable<void> {
     return this.http.post<void>(
       `${environment.apiUrl}/flights/${flightId}/pilots`,
@@ -119,5 +127,16 @@ export class FlightService {
         time: new Date(waypoint.time + "Z")
       }))
     };
+  }
+
+  public uploadFlight(file: File, airField: string): Observable<Flight> {
+    
+    const form = new FormData();
+    form.append('file', file, file.name);
+
+    return this.http.post<Flight>(
+      `${environment.apiUrl}/igcd/upload?airfield=${airField}`,
+      form
+    )
   }
 }

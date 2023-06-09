@@ -19,6 +19,7 @@ import { DisplayMode } from 'src/app/models/display-mode';
 import { TitleService } from 'src/app/services/title.service';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
+import { SnackbarService } from 'src/app/services/snackbar.service';
 
 interface WeekDay {
   abbreviation: string;
@@ -44,6 +45,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public user$: Observable<User | null>;
 
   public canAssignPilots$: Observable<boolean>;
+  public canManageFlights$: Observable<boolean>;
+
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -62,7 +65,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private router: Router,
     private settings: SettingsService,
     private auth: AuthService,
-    private admiralSnackbar: MatSnackBar,
+    private admiralSnackbar: SnackbarService,
     private title: TitleService
   ) {
 
@@ -191,6 +194,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     );
 
     this.canAssignPilots$ = this.auth.hasScope(Scopes.AssignPilots);
+    this.canManageFlights$ = this.auth.hasScope(Scopes.ManageFlights);
   }
 
   private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
@@ -349,9 +353,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   public addToLogbook(flight: Flight, user: User) {
     this.flightService.addPilot(flight.flightId!, user.userId).subscribe(() => {
-      this.admiralSnackbar.open("Flight added to your logbook.", "Close", {
-        duration: 3000
-      });
+      this.admiralSnackbar.open("Flight added to your logbook.", "Close");
 
       this.refreshFlights$.next(null);
     });
@@ -397,5 +399,22 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   public isUserOnFlight(flight: Flight, user: User) {
     return flight.occupants != null && user != null && flight.occupants.some(x => x.userId = user.userId);
+  }
+
+  public uploadIgcFile(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    this.flightService.uploadFlight(
+      element.files![0],
+      "92A"
+    ).subscribe({
+      next: (flight) => {
+        this.router.navigate(["flights", flight.flightId]);
+      },
+      error: () => {
+        this.admiralSnackbar.openError("Error adding flight. Please try again.");
+        // Reset the input so the user can upload the same file again
+        element.value = "";
+      }
+    })
   }
 }

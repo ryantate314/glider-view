@@ -14,6 +14,9 @@ namespace GliderView.Data
     {
         public static ICustomQueryParameter AsTableValuedParameter(this IEnumerable<Waypoint> waypoints)
         {
+            if (waypoints == null)
+                throw new ArgumentNullException(nameof(waypoints));
+
             var table = new DataTable();
             table.Columns.Add("WaypointId", typeof(int));
             table.Columns.Add("Latitude", typeof(decimal));
@@ -39,6 +42,9 @@ namespace GliderView.Data
 
         public static ICustomQueryParameter AsTableValuedParameter(this IEnumerable<Guid> guids)
         {
+            if (guids == null)
+                throw new ArgumentNullException(nameof(guids));
+
             var table = new DataTable();
             table.Columns.Add("Id", typeof(Guid));
 

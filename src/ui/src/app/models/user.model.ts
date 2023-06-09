@@ -20,7 +20,8 @@ export interface User {
 export enum Scopes {
     ViewAllUsers = "user:viewall",
     CreateUser = "user:create",
-    AssignPilots = "flight:assignPilot"
+    AssignPilots = "flight:assignPilot",
+    ManageFlights = "flight:manage"
 }
 
 export enum Role {

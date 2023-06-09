@@ -17,13 +17,21 @@ namespace GliderView.API.Controllers
         private readonly IFlightRepository _flightRepo;
         private readonly IIgcFileRepository _igcRepo;
         private readonly FlightService _flightService;
+        private readonly IgcService _igcService;
         private readonly IncludeHandler<Flight> _includeHandler;
 
-        public FlightController(IFlightRepository flightRepo, IIgcFileRepository igcRepo, FlightService flightService, ILogger<FlightController> logger)
+        public FlightController(
+            IFlightRepository flightRepo,
+            IIgcFileRepository igcRepo,
+            FlightService flightService,
+            IgcService igcService,
+            ILogger<FlightController> logger
+        )
         {
             _flightRepo = flightRepo;
             _igcRepo = igcRepo;
             _flightService = flightService;
+            _igcService = igcService;
 
             _includeHandler = new IncludeHandler<Flight>(logger)
                 .AddHandler(x => x.Waypoints, config =>
@@ -102,10 +110,8 @@ namespace GliderView.API.Controllers
         [HttpGet("{flightId}/igc")]
         public async Task<IActionResult> DownloadIgcFile([FromRoute] Guid flightId)
         {
-            var flight = await _flightRepo.GetFlight(flightId);
+            var flight = await _flightService.GetFlight(flightId);
 
-            if (flight == null)
-                return NotFound();
             if (String.IsNullOrEmpty(flight.IgcFileName))
                 return BadRequest("The provided flight does not have an associated Igc file.");
 
@@ -123,6 +129,15 @@ namespace GliderView.API.Controllers
                 }
                 throw;
             }
+        }
+
+        [Authorize]
+        [HttpPost("{flightId}/reprocess")]
+        public async Task<IActionResult> ReProcessIgcFile([FromRoute] Guid flightId)
+        {
+            await _igcService.ReprocessIgcFile(flightId);
+
+            return Ok();
         }
 
         [Authorize]

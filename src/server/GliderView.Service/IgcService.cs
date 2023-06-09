@@ -3,6 +3,7 @@ using GliderView.Service.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -16,7 +17,7 @@ namespace GliderView.Service
         private readonly IIgcFileRepository _fileRepo;
         private readonly IFlightRepository _flightRepo;
         private readonly ILogger _logger;
-        private readonly IFaaDatabaseProvider _faaProvider;
+        private readonly IOgnDeviceDatabaseProvider _ognProvider;
         private readonly IFlightBookClient _flightBookClient;
         private readonly IFlightAnalyzer _flightAnalyzer;
 
@@ -33,17 +34,23 @@ namespace GliderView.Service
         }
 
 
-        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IFaaDatabaseProvider faaProvider, IFlightBookClient flightBookClient, IFlightAnalyzer flightAnalyzer)
+        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IOgnDeviceDatabaseProvider ognProvider, IFlightBookClient flightBookClient, IFlightAnalyzer flightAnalyzer)
         {
             _fileRepo = fileRepo;
             _flightRepo = flightRepo;
             _logger = logger;
-            _faaProvider = faaProvider;
+            _ognProvider = ognProvider;
             _flightBookClient = flightBookClient;
 
             _flightAnalyzer = flightAnalyzer;
         }
 
+        /// <summary>
+        /// Downloads an IGC file from the OGN Flightbook and creates the flight.
+        /// </summary>
+        /// <param name="airfield"></param>
+        /// <param name="trackerId"></param>
+        /// <returns></returns>
         public async Task DownloadAndProcess(string airfield, string trackerId)
         {
             IgcFile parsedFile;
@@ -58,6 +65,13 @@ namespace GliderView.Service
             await ProcessIgcFile(fileName, parsedFile, airfield, trackerId);
         }
 
+        /// <summary>
+        /// Reads a file already on disk disk and creates the flight.
+        /// </summary>
+        /// <param name="airfield"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public async Task ReadAndProcess(string airfield, string fileName)
         {
             string? trackerId = GetTrackerFromFilename(Path.GetFileName(fileName));
@@ -94,7 +108,15 @@ namespace GliderView.Service
             };
         }
 
-        public async Task UploadAndProcess(string fileName, Stream stream, string airfield)
+        /// <summary>
+        /// Creates a new flight from a uploaded IGC file.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="stream"></param>
+        /// <param name="airfield"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public async Task<Flight> UploadAndProcess(string fileName, Stream stream, string airfield)
         {
             IgcFile parsedFile = IgcFile.Parse(stream);
             
@@ -104,7 +126,8 @@ namespace GliderView.Service
                 throw new ArgumentException("IGC file name is not in the correct format.");
 
             string internalFileName = await _fileRepo.SaveFile(stream, airfield, parsedFile.GliderId, trackerId, parsedFile.DateOfFlight);
-            await ProcessIgcFile(internalFileName, parsedFile, airfield, trackerId);
+           
+            return await ProcessIgcFile(internalFileName, parsedFile, airfield, trackerId);
         }
 
         //public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
@@ -138,7 +161,7 @@ namespace GliderView.Service
         //    }
         //}
 
-        private async Task ProcessIgcFile(string fileName, IgcFile file, string airfield, string trackerId)
+        private async Task<Flight> ProcessIgcFile(string fileName, IgcFile file, string airfield, string trackerId)
         {
             DateTime eventDate = file.DateOfFlight;
 
@@ -214,8 +237,10 @@ namespace GliderView.Service
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error adding flight: {aircraft.RegistrationId} {flight.StartDate}");
-                return;
+                throw;
             }
+
+            return flight;
         }
 
         private async Task<Aircraft> AddAircraft(string trackerId, IgcFile file)
@@ -255,12 +280,13 @@ namespace GliderView.Service
 
             try
             {
-                var aircraft = await _faaProvider.Lookup(registration);
-                isGlider = aircraft?.TypeAircraft == FaaDatabaseProvider.Aircraft.TYPE_GLIDER;
+                OgnDeviceDatabaseProvider.AircraftInfo? aircraft = await _ognProvider.GetAircraftInfo(trackerId);
+
+                isGlider = aircraft?.AircraftType == OgnDeviceDatabaseProvider.AircraftType.Glider;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error looking up aircraft in FAA database: {trackerId};{registration};{description}");
+                _logger.LogError(ex, $"Error looking up aircraft in OGN database: {trackerId};{registration};{description}");
             }
             
             if (isGlider == null)
@@ -269,6 +295,51 @@ namespace GliderView.Service
             }
 
             return isGlider;
+        }
+
+        public async Task ReprocessIgcFile(Guid flightId)
+        {
+            Flight? flight = await _flightRepo.GetFlight(flightId);
+
+            if (flight == null)
+                throw new NotFoundException("Could not find flight with ID " + flightId);
+
+            if (String.IsNullOrEmpty(flight.IgcFileName))
+                throw new InvalidOperationException("The provided flight does not have an associated Igc file.");
+
+            IgcFile parsedFile;
+            using (Stream file = _fileRepo.GetFile(flight.IgcFileName))
+            {
+                parsedFile = IgcFile.Parse(file);
+            }
+
+            flight.Waypoints = MapWaypoints(parsedFile.Waypoints);
+
+            await _flightRepo.UpsertWaypoints(flight);
+
+            // Recalculate statistics
+            try
+            {
+                flight.Statistics = _flightAnalyzer.Analyze(flight);
+
+                await _flightRepo.UpsertFlightStatistics(flight);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to analyze flight");
+            }
+        }
+
+        public List<Waypoint> MapWaypoints(IEnumerable<IgcFile.Waypoint> waypoints)
+        {
+            return waypoints.Select(x => new Waypoint()
+            {
+                GpsAltitude = x.GpsAltitude,
+                Latitude= x.Latitude,
+                Longitude= x.Longitude,
+                Time= x.Time,
+            })
+                .ToList();
         }
     }
 }

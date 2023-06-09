@@ -1,6 +1,7 @@
 ﻿using GliderView.API.Models;
 using GliderView.Service;
 using GliderView.Service.Exeptions;
+using GliderView.Service.Models;
 using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +19,9 @@ namespace GliderView.API.Controllers
             _service = service;
         }
 
+        /// <summary>
+        /// Entry point from the IGCD console application which makes an API call upon flight events.
+        /// </summary>
         [HttpPost("webhook")]
         public IActionResult Webhook([FromBody] IgcdPayload payload)
         {
@@ -47,24 +51,29 @@ namespace GliderView.API.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload(List<IFormFile> files, [FromQuery] string airfield)
+        public async Task<IActionResult> Upload([FromQuery] string airfield)
         {
+            List<IFormFile> files = Request.Form.Files.ToList();
+
             _logger.LogInformation($"Uploading {files.Count} IGC file(s) for {airfield}");
 
             if (string.IsNullOrEmpty(airfield))
                 return BadRequest("Airfield is required.");
 
-            foreach (IFormFile file in files)
-            {
-                _logger.LogDebug("Uploading file {0} with length {1}", file.FileName, file.Length);
+            if (files.Count != 1)
+                return BadRequest("Can only upload 1 file at a time.");
 
-                using (var stream = file.OpenReadStream())
-                {
-                    await _service.UploadAndProcess(file.FileName, stream, airfield);
-                }
+            var file = files[0];
+
+            _logger.LogDebug("Uploading file {0} with length {1}", file.FileName, file.Length);
+
+            Flight flight;
+            using (var stream = file.OpenReadStream())
+            {
+                flight = await _service.UploadAndProcess(file.FileName, stream, airfield);
             }
 
-            return Ok();
+            return Ok(flight);
         }
 
         [HttpPost("process-file")]
@@ -102,6 +111,13 @@ namespace GliderView.API.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Hangfire entry point for processing a landing event from OGN Flightbook
+        /// </summary>
+        /// <param name="airfield"></param>
+        /// <param name="trackerId"></param>
+        /// <param name="eventDate"></param>
+        /// <returns></returns>
         [AutomaticRetry(Attempts = 2)]
         [NonAction]
         public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)

@@ -2,8 +2,11 @@
     <ng-container *ngIf="flight$ | async as flight; else loading">
         <div class="d-flex align-items-center">
             <h1>{{ flight.aircraft?.description ?? "Unknown Aircraft" }}</h1>
-            <button mat-icon-button class="ms-auto me-lg-5" title="Download IGC File" *ngIf="user$ | async" (click)="downloadIgcFile(flight)">
+            <button mat-icon-button class="ms-auto" title="Download IGC File" *ngIf="user$ | async" (click)="downloadIgcFile(flight)">
                 <mat-icon>download</mat-icon>
+            </button>
+            <button mat-icon-button title="Reload Flight from IGC File" *ngIf="canManageFlights$ | async" (click)="reloadIgcFile(flight)">
+                <mat-icon>refresh</mat-icon>
             </button>
         </div>
         <p>

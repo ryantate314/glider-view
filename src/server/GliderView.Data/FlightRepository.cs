@@ -217,7 +217,7 @@ WHERE FlightGuid = @gliderFlightId
 
                 // Insert waypoints
                 if (flight.Waypoints != null && flight.Waypoints.Any())
-                    await InsertWaypoints(flight, tran);
+                    await UpsertWaypoints(flight, tran);
 
                 tran.Commit();
             }
@@ -347,37 +347,64 @@ WHERE F.FlightId = SCOPE_IDENTITY();
             return stats;
         }
 
-        private Task InsertWaypoints(Service.Models.Flight flight, IDbTransaction tran)
+        public async Task UpsertWaypoints(Service.Models.Flight flight, IDbTransaction? tran = null)
         {
             const string sql = @"
-INSERT INTO dbo.Waypoint (
-    FlightId
-    , Latitude
-    , Longitude
-    , GpsAltitudeMeters
-    , [Date]
-    , FlightEvent
-)
-SELECT
-    (
-        SELECT
-            FlightId
-        FROM dbo.Flight F
-        WHERE F.FlightGuid = @flightId
+
+DECLARE @flightPk INT = (
+    SELECT FlightId
+    FROM dbo.Flight F
+    WHERE F.FlightGuid = @flightId
+        AND F.IsDeleted = 0
+);
+
+-- TODO: Raise Error
+
+BEGIN TRAN
+
+BEGIN TRY
+
+    DELETE dbo.Waypoint
+    WHERE FlightId = @flightPk;
+
+    INSERT INTO dbo.Waypoint (
+        FlightId
+        , Latitude
+        , Longitude
+        , GpsAltitudeMeters
+        , [Date]
+        , FlightEvent
     )
-    , W.Latitude
-    , W.Longitude
-    , W.GpsAltitudeMeters
-    , W.[Date]
-    , W.FlightEvent
-FROM @waypoints W
+    SELECT
+          @flightPk
+        , W.Latitude
+        , W.Longitude
+        , W.GpsAltitudeMeters
+        , W.[Date]
+        , W.FlightEvent
+    FROM @waypoints W
+
+    COMMIT TRAN
+END TRY
+BEGIN CATCH
+    ROLLBACK TRAN;
+    THROW;
+END CATCH
 ";
             var args = new
             {
                 flight.FlightId,
                 waypoints = flight.Waypoints!.AsTableValuedParameter()
             };
-            return tran.Connection.ExecuteAsync(sql, args, tran);
+            if (tran == null)
+            {
+                using (var con = GetOpenConnection())
+                    await con.ExecuteAsync(sql, args);
+            }
+            else
+            {
+                await tran.Connection.ExecuteAsync(sql, args, tran);
+            };
         }
 
         public async Task UpsertFlightStatistics(Service.Models.Flight flight)

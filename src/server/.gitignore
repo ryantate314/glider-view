@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Ignore IGC files which are added to the project for testing
+*.igc
+
 # User-specific files
 *.rsuser
 *.suo

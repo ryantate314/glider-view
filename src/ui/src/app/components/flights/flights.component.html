@@ -62,13 +62,22 @@
                     <mat-icon>more_vert</mat-icon>
                 </button>
                 <mat-menu #menu="matMenu">
-                        <!-- <button mat-menu-item>Auto Refresh</button> -->
-                        <button mat-menu-item (click)="setDisplayMode(DisplayMode.Table)" *ngIf="(displayMode$ | async) != DisplayMode.Table">
-                            <mat-icon>table_view</mat-icon> Table View
-                        </button>
-                        <button mat-menu-item title="Card View" (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
-                            <mat-icon class="material-icons-outlined">view_agenda</mat-icon> Card View
-                        </button>
+                    <!-- <button mat-menu-item>Auto Refresh</button> -->
+                    <button mat-menu-item (click)="setDisplayMode(DisplayMode.Table)" *ngIf="(displayMode$ | async) != DisplayMode.Table">
+                        <mat-icon>table_view</mat-icon> Table View
+                    </button>
+                    <button mat-menu-item (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
+                        <mat-icon class="material-icons-outlined">view_agenda</mat-icon> Card View
+                    </button>
+                    <button mat-menu-item (click)="uploader.click()" *ngIf="canManageFlights$ | async">
+                        <mat-icon class="material-icons-outlined">upload</mat-icon> Upload IGC File
+                    </button>
+                    <input 
+                        hidden 
+                        type="file" 
+                        #uploader
+                        (change)="uploadIgcFile($event)"
+                    />
                 </mat-menu>
                 <!-- Display Mode -->
                 

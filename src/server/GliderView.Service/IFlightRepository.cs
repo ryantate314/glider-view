@@ -1,6 +1,7 @@
 ﻿using GliderView.Service.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,5 +26,6 @@ namespace GliderView.Service
         Task RemovePilot(Guid flightId, Guid pilotId);
         Task UpdateFlightEvents(Flight flight);
         Task UpsertFlightStatistics(Flight flight);
+        Task UpsertWaypoints(Flight flight, IDbTransaction? tran = null);
     }
 }

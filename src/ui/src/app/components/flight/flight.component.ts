@@ -83,6 +83,7 @@ export class FlightComponent implements OnInit, AfterViewInit {
   public chartConfig$: Observable<{ data: ChartData<'line'>, options: ChartOptions<'line'> }>;
   public userOnFlight$: Observable<boolean>;
   public canAssignPilots$: Observable<boolean>;
+  public canManageFlights$: Observable<boolean>;
 
   private map: leaflet.Map | null = null;
   private altitudeChartData$: Observable<ChartData<'line'>>;
@@ -213,6 +214,7 @@ export class FlightComponent implements OnInit, AfterViewInit {
     );
 
     this.canAssignPilots$ = this.auth.hasScope(Scopes.AssignPilots);
+    this.canManageFlights$ = this.auth.hasScope(Scopes.ManageFlights);
   }
 
   ngOnInit(): void {
@@ -351,6 +353,20 @@ export class FlightComponent implements OnInit, AfterViewInit {
         );
       }
     });
+  }
+
+  public reloadIgcFile(flight: Flight) {
+    this.flightService.reloadIgcFile(flight.flightId!).subscribe({
+      next: () => {
+        this.refreshFlight$.next();
+        this.snackbar.open("Successfully reloaded file data.");
+      },
+      error: (error) => {
+        this.snackbar.openError(
+          "Error reloading from IGC file. Please try again."
+        )
+      }
+    })
   }
 
 }

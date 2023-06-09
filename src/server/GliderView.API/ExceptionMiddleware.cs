@@ -31,6 +31,12 @@ namespace GliderView.API
                         await httpContext.Response.WriteAsync(ex.Message);
                         break;
                     }
+                    case FlightAlreadyExistsException mappedEx:
+                        _logger.LogInformation(ex.Message);
+
+                        httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                        await httpContext.Response.WriteAsync(ex.Message);
+                        break;
                     default:
                     {
                         _logger.LogError(ex, ex.Message);

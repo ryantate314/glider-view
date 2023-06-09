@@ -54,6 +54,21 @@ namespace GliderView.UnitTests
              );
         }
 
+        private void AddFile2ToFileSystem()
+        {
+            _fileSystem.AddFile(
+                _fileSystem.Path.Combine(
+                    directory,
+                    "2023",
+                    "05",
+                    "06",
+                    "92A",
+                    FILE_2_FILENAME
+                ),
+                new MockFileData(FILE_2)
+             );
+        }
+
         [Test]
         public async Task DownloadAndProcess_HappyPath()
         {
@@ -143,14 +158,54 @@ namespace GliderView.UnitTests
             _mockFlightRepository.Verify(x => x.AddFlight(It.IsAny<Flight>()), Times.Once());
         }
 
+        [Test]
+        public async Task ReadAndProcess_CrossesMidnight()
+        {
+            const string tracker = FILE_2_Tracker;
+            const string airfield = "92A";
+            string fileName = @"\2023\05\06\92A\" + FILE_2_FILENAME;
+
+            Guid aircraftId = Guid.NewGuid();
+            Guid flightId = Guid.NewGuid();
+
+            // Setup
+            AddFile2ToFileSystem();
+
+            // No existing flights
+            _mockFlightRepository.Setup(x => x.GetFlights(
+                It.IsAny<FlightSearch>()
+            )).ReturnsAsync(() => new List<Flight>());
+
+            _mockFlightRepository.Setup(x => x.GetAircraftByTrackerId(tracker))
+                .ReturnsAsync(() => null);
+
+            _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
+                .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
+
+            _mockFlightRepository.Setup(x => x.AddFlight(It.IsAny<Flight>()))
+                .Callback<Flight>(flight => flight.FlightId = flightId);
+
+            // Execute
+            await _service.ReadAndProcess(airfield, fileName);
+
+            // Assert
+
+            _mockFlightRepository.Verify(x => x.AddFlight(
+                    // Ensure the code correctly advanced the date to the following day when crossing midnight
+                    It.Is<Flight>(flight => flight.Waypoints!.Any(waypoint => waypoint.Time.Date == FILE_2_EVENTDATE.AddDays(1).Date))
+                ),
+                Times.Once()
+            );
+
+        }
+
         #region IgcFiles
         private const string FILE_1_FILENAME = "2022-11-13_N2750H.C7720C.igc";
         private const string FILE_1_Tracker = "C7720C";
         private const string FILE_1_REGISTRATION = "N2750H";
         private DateTime FILE_1_EVENTDATE = new DateTime(2022, 11, 13);
         private const string FILE_1 =
-@"
-AOGNOGN
+@"AOGNOGN
 HFDTE131122
 HFFXA050
 HFPLTPILOTINCHARGE:
@@ -289,6 +344,64 @@ B1712043513340N08435283WA0000000237
 B1712103513397N08435237WA0000000227
 B1712153513443N08435197WA0000000225
 B1712233513507N08435148WA0000000226
+";
+        // File 2 traverses a midnight boundary
+        private const string FILE_2_FILENAME = "2023-05-06_N2399U.C7720C.igc";
+        private const string FILE_2_Tracker = "C7720C";
+        private const string FILE_2_REGISTRATION = "N2399U";
+        private DateTime FILE_2_EVENTDATE = new DateTime(2023, 05, 06);
+        private const string FILE_2 = @"AOGNOGN
+HFDTE060523
+HFFXA050
+HFPLTPILOTINCHARGE:
+HFGTYGLIDERTYPE:PA-25 Pawnee
+HFGIDGLIDERID:N2399U
+HFDTM100GPSDATUM:WGS-1984
+HFRFWFIRMWAREVERSION:
+HFRHWHARDWAREVERSION:
+HFFTYFRTYPE:OGN-FLIGHTBOOK
+HFGPSGENERIC
+HFPRSPRESSALTSENSOR:
+HFCIDCOMPETITIONID:9U
+B2359473513547N08435116WA0000000236
+B2359543513639N08435041WA0000000241
+B2359593513708N08434965WA0000000259
+B0000043513768N08434881WA0000000278
+B0000103513851N08434791WA0000000296
+B0000153513943N08434769WA0000000311
+B0000213514050N08434812WA0000000333
+B0000263514111N08434892WA0000000350
+B0000323514136N08435015WA0000000369
+B0000373514117N08435113WA0000000388
+B0000423514075N08435196WA0000000405
+B0000483514013N08435287WA0000000424
+B0000533513953N08435358WA0000000441
+B0000583513891N08435425WA0000000460
+B0001033513830N08435491WA0000000480
+B0001083513767N08435553WA0000000496
+B0001133513700N08435606WA0000000515
+B0001183513629N08435649WA0000000532
+B0001233513553N08435679WA0000000549
+B0001303513445N08435706WA0000000579
+B0001363513353N08435733WA0000000558
+B0001413513271N08435648WA0000000473
+B0001473513272N08435426WA0000000438
+B0001523513316N08435248WA0000000409
+B0001573513384N08435079WA0000000384
+B0002023513473N08434928WA0000000364
+B0002103513633N08434712WA0000000341
+B0002153513739N08434600WA0000000366
+B0002203513848N08434569WA0000000360
+B0002253513937N08434644WA0000000330
+B0002303513963N08434778WA0000000307
+B0002363513859N08434876WA0000000271
+B0002413513766N08434945WA0000000247
+B0002493513640N08435044WA0000000241
+B0002553513563N08435105WA0000000237
+B0003013513500N08435153WA0000000236
+B0003083513444N08435196WA0000000235
+B0003153513413N08435225WA0000000235
+B0003253513420N08435250WA0000000234
 ";
         #endregion
     }

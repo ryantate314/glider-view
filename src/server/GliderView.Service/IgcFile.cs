@@ -38,12 +38,17 @@ namespace GliderView.Service
             using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, leaveOpen: true))
             {
                 string? line;
+                // Keep track of the previous timestamp to detect when the waypoints jump across midnight UTC time
+                DateTime? previousTimestamp = null;
                 while ((line = streamReader.ReadLine()) != null)
                 {
-                    if (line.StartsWith("B"))
+                    if (line.StartsWith("B") && previousTimestamp != null)
                     {
+                        var waypoint = ParseWaypoint(previousTimestamp.Value, line);
+                        previousTimestamp = waypoint.Time;
+
                         parsedFile.Waypoints.Add(
-                            ParseWaypoint(parsedFile.DateOfFlight, line)
+                            waypoint
                         );
                     }
                     else if (line.StartsWith(GLIDER_TYPE))
@@ -64,6 +69,8 @@ namespace GliderView.Service
                         int year = 2000 + Int32.Parse(date.Substring(4, 2));
 
                         parsedFile.DateOfFlight = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+
+                        previousTimestamp = parsedFile.DateOfFlight;
                     }
                 }
             }
@@ -78,10 +85,12 @@ namespace GliderView.Service
             return parsedFile;
         }
 
-        private static Waypoint ParseWaypoint(DateTime date, string line)
+        private static Waypoint ParseWaypoint(DateTime previousTimestamp, string line)
         {
             // B hhmmss #######N ########W A PPPPP GGGGG AAA CC EEE
             string time = line.Substring(1, 6);
+
+            // UTC
             int hour = Int32.Parse(time.Substring(0, 2));
             int minutes = Int32.Parse(time.Substring(2, 2));
             int seconds = Int32.Parse(time.Substring(4, 2));
@@ -101,10 +110,22 @@ namespace GliderView.Service
                 GpsAltitude = Int32.Parse(gpsAltitude),
                 Latitude = ParseCoordinate(latitude),
                 Longitude = ParseCoordinate(longitude),
-                Time = date + new TimeSpan(hour, minutes, seconds)
+                Time = ParseTimestamp(previousTimestamp, hour, minutes, seconds)
             };
 
             return waypoint;
+        }
+
+        private static DateTime ParseTimestamp(DateTime previousTimestamp, int hour, int minutes, int seconds)
+        {
+            var date = previousTimestamp.Date.Add(new TimeSpan(hour, minutes, seconds));
+
+            // Add a day to account for if the time moves from 11:59 to 00:00
+            // https://github.com/skyhop/Igc/blob/master/Skyhop.Igc/Parser.cs#L514
+            if (date < previousTimestamp.AddHours(-1))
+                date = date.AddDays(1);
+
+            return date;
         }
 
         private static double ParseCoordinate(string coordinate)

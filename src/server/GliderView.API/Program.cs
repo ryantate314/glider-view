@@ -78,7 +78,8 @@ namespace GliderView.API
                     new FileSystem()
                 )
             );
-            services.AddTransient<IFaaDatabaseProvider, FaaDatabaseProvider>();
+            //services.AddTransient<IFaaDatabaseProvider, FaaDatabaseProvider>();
+            services.AddTransient<IOgnDeviceDatabaseProvider, OgnDeviceDatabaseProvider>();
             services.AddTransient<IFlightBookClient>(services =>
                 new FlightBookClient(config["flightBookApiUrl"]!, services.GetRequiredService<IHttpClientFactory>())
             );
