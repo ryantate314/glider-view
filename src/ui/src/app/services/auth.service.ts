@@ -1,7 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, distinctUntilChanged, map, Observable, of, ReplaySubject, shareReplay, startWith, throwError, withLatestFrom } from 'rxjs';
-import { environment } from 'src/environments/environment';
 import { Scopes, Token, User, UserLogin } from '../models/user.model';
 import { UserService } from './user.service';
 

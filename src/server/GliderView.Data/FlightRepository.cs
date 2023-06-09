@@ -347,7 +347,7 @@ WHERE F.FlightId = SCOPE_IDENTITY();
             return stats;
         }
 
-        public async Task UpsertWaypoints(Service.Models.Flight flight, IDbTransaction? tran = null)
+        private Task UpsertWaypoints(Service.Models.Flight flight, IDbTransaction tran)
         {
             const string sql = @"
 
@@ -396,18 +396,15 @@ END CATCH
                 flight.FlightId,
                 waypoints = flight.Waypoints!.AsTableValuedParameter()
             };
-            if (tran == null)
-            {
-                using (var con = GetOpenConnection())
-                    await con.ExecuteAsync(sql, args);
-            }
-            else
-            {
-                await tran.Connection.ExecuteAsync(sql, args, tran);
-            };
+            
+            return tran.Connection.ExecuteAsync(sql, args, tran);
         }
 
-        public async Task UpsertFlightStatistics(Service.Models.Flight flight)
+        // Don't expost the transaction to the public interface
+        public Task UpsertFlightStatistics(Service.Models.Flight flight)
+            => UpsertFlightStatistics(flight, null);
+
+        private async Task UpsertFlightStatistics(Service.Models.Flight flight, IDbTransaction? tran)
         {
             IEnumerable<FlightStatistic> statistics = GetStatisticsFromFlight(flight);
 
@@ -453,8 +450,15 @@ END CATCH
                 flightGuid = flight.FlightId,
                 statistics = ToTableValueParameter(statistics)
             };
-            using (var con = GetOpenConnection())
-                await con.ExecuteAsync(sql, args);
+            if (tran == null)
+            {
+                using (var con = GetOpenConnection())
+                    await con.ExecuteAsync(sql, args);
+            }
+            else
+            {
+                await tran.Connection.ExecuteAsync(sql, args, tran);
+            }   
         }
 
         private ICustomQueryParameter ToTableValueParameter(IEnumerable<FlightStatistic> statistics)
@@ -750,6 +754,33 @@ WHERE F.IsDeleted = 0
                 return (await con.QueryAsync<Service.Models.Occupant>(sql, new { flightIds = flightIds.AsTableValuedParameter() }))
                     .GroupBy(x => x.FlightId)
                     .ToDictionary(x => x.Key, x => x.AsEnumerable());
+            }
+        }
+
+        public async Task UpdateFlight(Service.Models.Flight flight)
+        {
+            const string sql = @"
+UPDATE dbo.Flight
+    SET StartDate = @startDate
+    , EndDate = @endDate
+WHERE FlightGuid = @flightId;
+";
+            using (var con = await GetOpenConnectionAsync())
+            using (var tran = await con.BeginTransactionAsync())
+            {
+                var args = new
+                {
+                    FlightId = flight.FlightId,
+                    StartDate = flight.StartDate,
+                    EndDate = flight.EndDate
+                };
+                await tran.Connection.ExecuteAsync(sql, args, tran);
+
+                await UpsertWaypoints(flight, tran);
+
+                await UpsertFlightStatistics(flight, tran);
+
+                await tran.CommitAsync();
             }
         }
     }

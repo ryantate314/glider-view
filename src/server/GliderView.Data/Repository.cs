@@ -26,5 +26,15 @@ namespace GliderView.Data
             }
             return con;
         }
+
+        protected async Task<SqlConnection> GetOpenConnectionAsync()
+        {
+            var con = new SqlConnection(ConnectionString);
+            if (con.State != ConnectionState.Open)
+            {
+                await con.OpenAsync();
+            }
+            return con;
+        }
     }
 }

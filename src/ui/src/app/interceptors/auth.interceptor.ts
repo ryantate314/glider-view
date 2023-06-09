@@ -20,9 +20,9 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
 
     if (request.headers.has(IGNORE_AUTH_HEADER_NAME)) {
-      request = request.clone({
-        headers: request.headers.delete(IGNORE_AUTH_HEADER_NAME)
-      });
+      // request = request.clone({
+      //   headers: request.headers.delete(IGNORE_AUTH_HEADER_NAME)
+      // });
       return next.handle(request);
     }
 

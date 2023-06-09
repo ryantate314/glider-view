@@ -47,6 +47,7 @@ import { LeaderboardComponent } from './components/leaderboard/leaderboard.compo
 import { FlightDurationPipe } from './pipes/flight-duration.pipe';
 import { FlightDurationDirective } from './directives/flight-duration.directive';
 import { AssignPilotModalComponent } from './components/assign-pilot-modal/assign-pilot-modal.component';
+import { UNAUTHORIZED_INTERCEPTOR } from './interceptors/unauthorized.interceptor';
 
 Chart.register(Annotation);
 
@@ -114,7 +115,8 @@ Marker.prototype.options.icon = iconDefault;
     NgChartsModule,
   ],
   providers: [
-    AUTH_INTERCEPTOR
+    AUTH_INTERCEPTOR,
+    UNAUTHORIZED_INTERCEPTOR
   ],
   bootstrap: [AppComponent]
 })

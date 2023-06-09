@@ -12,6 +12,7 @@ namespace GliderView.Service
     {
         Task AddAircraft(Aircraft aircraft);
         Task AddFlight(Flight flight);
+        Task UpdateFlight(Flight flight);
         Task AddPilot(Guid flightId, Guid pilotId);
         Task AssignTow(Guid gliderFlightId, Guid towPlaneFlightId);
         Task<Aircraft?> GetAircraftByTrackerId(string trackerId);
@@ -26,6 +27,5 @@ namespace GliderView.Service
         Task RemovePilot(Guid flightId, Guid pilotId);
         Task UpdateFlightEvents(Flight flight);
         Task UpsertFlightStatistics(Flight flight);
-        Task UpsertWaypoints(Flight flight, IDbTransaction? tran = null);
     }
 }

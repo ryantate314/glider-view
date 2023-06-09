@@ -187,13 +187,7 @@ namespace GliderView.Service
                 StartDate = file.Waypoints.Select(x => (DateTime?)x.Time)
                     .Min() ?? eventDate,
                 IgcFileName = fileName,
-                Waypoints = file.Waypoints.Select(waypoint => new Waypoint()
-                {
-                    Time = waypoint.Time,
-                    GpsAltitude = waypoint.GpsAltitude,
-                    Latitude = waypoint.Latitude,
-                    Longitude = waypoint.Longitude
-                }).ToList()
+                Waypoints = MapWaypoints(file.Waypoints)
             };
 
             // See if this flight already exists
@@ -315,19 +309,22 @@ namespace GliderView.Service
 
             flight.Waypoints = MapWaypoints(parsedFile.Waypoints);
 
-            await _flightRepo.UpsertWaypoints(flight);
+            flight.EndDate = flight.Waypoints.Select(x => (DateTime?)x.Time)
+                    .Max() ?? parsedFile.DateOfFlight;
+            flight.StartDate = flight.Waypoints.Select(x => (DateTime?)x.Time)
+                .Min() ?? parsedFile.DateOfFlight;
 
             // Recalculate statistics
             try
             {
                 flight.Statistics = _flightAnalyzer.Analyze(flight);
-
-                await _flightRepo.UpsertFlightStatistics(flight);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unable to analyze flight");
             }
+
+            await _flightRepo.UpdateFlight(flight);
         }
 
         public List<Waypoint> MapWaypoints(IEnumerable<IgcFile.Waypoint> waypoints)
