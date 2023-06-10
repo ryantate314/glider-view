@@ -58,4 +58,4 @@ export class UnauthorizedInterceptor implements HttpInterceptor {
   }
 }
 
-export const UNAUTHORIZED_INTERCEPTOR = { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true };
+export const UNAUTHORIZED_INTERCEPTOR = { provide: HTTP_INTERCEPTORS, useClass: UnauthorizedInterceptor, multi: true };

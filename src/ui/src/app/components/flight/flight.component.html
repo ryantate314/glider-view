@@ -8,6 +8,9 @@
             <button mat-icon-button title="Reload Flight from IGC File" *ngIf="canManageFlights$ | async" (click)="reloadIgcFile(flight)">
                 <mat-icon>refresh</mat-icon>
             </button>
+            <button mat-icon-button title="Delete Flight" *ngIf="canManageFlights$ | async" (click)="deleteFlight(flight)">
+                <mat-icon>delete</mat-icon>
+            </button>
         </div>
         <p>
             <a [routerLink]="['/flights/dashboard', flight.startDate | date: 'yyyy-MM-dd']" [fragment]="flight.flightId!" title="Go to Day">{{ flight.startDate | date: 'EEE MM/dd/yyyy' }}</a>

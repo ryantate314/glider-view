@@ -193,7 +193,9 @@ UPDATE dbo.Flight
         WHERE FlightGuid = @towPlaneFlightId
             AND IsDeleted = 0
     )
+    , ModifiedDate = CURRENT_TIMESTAMP
 WHERE FlightGuid = @gliderFlightId
+    AND IsDeleted = 0;
 ";
             using (var con = GetOpenConnection())
             {
@@ -763,7 +765,9 @@ WHERE F.IsDeleted = 0
 UPDATE dbo.Flight
     SET StartDate = @startDate
     , EndDate = @endDate
-WHERE FlightGuid = @flightId;
+    , ModifiedDate = CURRENT_TIMESTAMP
+WHERE FlightGuid = @flightId
+    AND IsDeleted = 0;
 ";
             using (var con = await GetOpenConnectionAsync())
             using (var tran = await con.BeginTransactionAsync())
@@ -781,6 +785,21 @@ WHERE FlightGuid = @flightId;
                 await UpsertFlightStatistics(flight, tran);
 
                 await tran.CommitAsync();
+            }
+        }
+
+        public async Task DeleteFlight(Guid flightId)
+        {
+            const string sql = @"
+UPDATE dbo.Flight
+    SET IsDeleted = 1
+    , ModifiedDate = CURRENT_TIMESTAMP
+WHERE FlightGuid = @flightId
+    AND IsDeleted = 0;
+";
+            using (var con = await GetOpenConnectionAsync())
+            {
+                await con.ExecuteAsync(sql, new { flightId });
             }
         }
     }

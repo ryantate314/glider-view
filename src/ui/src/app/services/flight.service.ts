@@ -139,4 +139,10 @@ export class FlightService {
       form
     )
   }
+
+  public deleteFlight(flightId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/flights/${flightId}`
+    )
+  }
 }

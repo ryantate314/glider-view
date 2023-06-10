@@ -73,5 +73,10 @@ namespace GliderView.Service
 
             return flight;
         }
+
+        public Task DeleteFlight(Guid flightId)
+        {
+            return _repo.DeleteFlight(flightId);
+        }
     }
 }

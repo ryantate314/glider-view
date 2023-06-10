@@ -27,5 +27,6 @@ namespace GliderView.Service
         Task RemovePilot(Guid flightId, Guid pilotId);
         Task UpdateFlightEvents(Flight flight);
         Task UpsertFlightStatistics(Flight flight);
+        Task DeleteFlight(Guid flightId);
     }
 }

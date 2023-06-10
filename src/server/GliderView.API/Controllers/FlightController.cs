@@ -18,6 +18,7 @@ namespace GliderView.API.Controllers
         private readonly IIgcFileRepository _igcRepo;
         private readonly FlightService _flightService;
         private readonly IgcService _igcService;
+        private readonly ILogger<FlightController> _logger;
         private readonly IncludeHandler<Flight> _includeHandler;
 
         public FlightController(
@@ -32,6 +33,7 @@ namespace GliderView.API.Controllers
             _igcRepo = igcRepo;
             _flightService = flightService;
             _igcService = igcService;
+            _logger = logger;
 
             _includeHandler = new IncludeHandler<Flight>(logger)
                 .AddHandler(x => x.Waypoints, config =>
@@ -198,6 +200,17 @@ namespace GliderView.API.Controllers
             }
 
             return NoContent();
+        }
+
+        [Authorize(Scopes.ManageFlights)]
+        [HttpDelete("{flightId}")]
+        public async Task<IActionResult> DeleteFlight([FromRoute] Guid flightId)
+        {
+            _logger.LogInformation($"User {User.Identity?.Name} is deleting flight {flightId}");
+
+            await _flightService.DeleteFlight(flightId);
+
+            return Ok();
         }
 
     }

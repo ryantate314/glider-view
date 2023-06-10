@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, filter, iif, map, merge, Observable, of, shareReplay, startWith, Subject, switchMap, take, throwError, withLatestFrom } from 'rxjs';
 import { Flight, FlightEventType, Occupant, Waypoint } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
@@ -97,7 +97,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
     private auth: AuthService,
     private title: TitleService,
     private dialog: MatDialog,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private router: Router
   ) {
 
     this.user$ = this.auth.user$.pipe(
@@ -367,6 +368,24 @@ export class FlightComponent implements OnInit, AfterViewInit {
         )
       }
     })
+  }
+
+  public deleteFlight(flight: Flight) {
+    // TODO: use an in-app confirmation message
+    if (confirm("Are you sure you want to delete this flight?")){
+      this.flightService.deleteFlight(flight.flightId!).subscribe({
+        next: ()=> {
+          this.snackbar.open("Successfully deleted flight.");
+          this.router.navigate(["/"]);
+        },
+        error: (error) => {
+          this.snackbar.openError(
+            "Error deleting flight. Please try again."
+          )
+        }
+      });
+    }
+    
   }
 
 }
