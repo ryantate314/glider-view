@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, distinctUntilChanged, filter, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, withLatestFrom } from 'rxjs';
-import { Flight } from 'src/app/models/flight.model';
+import { Aircraft, Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
 import { MatDialog } from '@angular/material/dialog';
@@ -416,5 +416,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
         element.value = "";
       }
     })
+  }
+
+  public formatGliderName(aircraft: Aircraft | null) {
+    if (aircraft == null)
+      return "Unknown Glider";
+    
+    return `${aircraft.description} (${aircraft.registrationId})`;
   }
 }

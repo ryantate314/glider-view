@@ -13,6 +13,9 @@ import { AuthInterceptor, IGNORE_AUTH_HEADER_NAME } from './auth.interceptor';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 
+/**
+ * Listens for failed API requests and attempts to automatically refresh the Auth token.
+ */
 @Injectable()
 export class UnauthorizedInterceptor implements HttpInterceptor {
 
@@ -41,11 +44,17 @@ export class UnauthorizedInterceptor implements HttpInterceptor {
   }
 
   authenticateAndTryAgain(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    console.log("Detected unauthorized API call to " + request.url + ". Attempting to refresh token.");
+
     return this.auth.refreshToken().pipe(
       catchError((err: HttpErrorResponse) => {
         if (err.status == HttpStatusCode.Unauthorized) {
+          console.log("Refresh attempt failed. Logging user out.");
           this.auth.logOut();
           this.router.navigate(["/"]);
+        }
+        else {
+          console.log("Unexpected error while refreshing auth token");
         }
         return throwError(() => err);
       }),

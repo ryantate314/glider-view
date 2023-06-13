@@ -15,6 +15,7 @@ export interface User {
     email: string;
     name: string;
     role: Role;
+    isSetUp: boolean;
 }
 
 export enum Scopes {

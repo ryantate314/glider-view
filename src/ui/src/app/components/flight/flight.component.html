@@ -16,6 +16,7 @@
             <a [routerLink]="['/flights/dashboard', flight.startDate | date: 'yyyy-MM-dd']" [fragment]="flight.flightId!" title="Go to Day">{{ flight.startDate | date: 'EEE MM/dd/yyyy' }}</a>
             {{ flight.startDate | date: 'h:mm a' }} - {{ flight.endDate | date: 'h:mm a' }} (<appFlightDuration [seconds]="flight.duration"></appFlightDuration>)
         </p>
+        <p>Registration: {{ flight.aircraft?.registrationId ?? "Unknown Aircraft" }}</p>
 
         <div class="row">
             <div class="col-md col-lg-4 mb-4">
@@ -47,7 +48,7 @@
                         </tr>
                         <tr>
                             <td>Pattern Entry Altitude</td>
-                            <td> {{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft MSL" : "Unknown" }}</td>
+                            <td>{{ flight.statistics.patternEntryAltitude !== null ? mToFt(flight.statistics!.patternEntryAltitude) + "ft MSL" : "Unknown" }}</td>
                         </tr>
                     </tbody>
                 </table>

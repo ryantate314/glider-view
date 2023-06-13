@@ -16,6 +16,12 @@ namespace GliderView.Service.Models
 
         [JsonIgnore]
         public string? HashedPassword { get; set; }
+        public bool IsSetUp {
+            get {
+                return HashedPassword != null;
+            }
+        }
+
         public byte FailedLoginAttempts { get; set; }
         public bool IsLockedOut { get; set; }
 

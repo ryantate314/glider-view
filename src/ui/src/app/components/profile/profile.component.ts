@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Observable, of, switchMap } from 'rxjs';
+import { Observable, filter, of, switchMap } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 import { TitleService } from 'src/app/services/title.service';
+import { SnackbarService } from 'src/app/services/snackbar.service';
 
 @Component({
   selector: 'app-profile',
@@ -18,6 +19,7 @@ export class ProfileComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private dialog: MatDialog,
+    private snackbar: SnackbarService,
     title: TitleService
   ) {
     this.user$ = this.auth.user$;
@@ -34,18 +36,11 @@ export class ProfileComponent implements OnInit {
       {
         panelClass: "dialog-md"
       }
-    )
-      .afterClosed()
-      .pipe(
-        switchMap((password: { currentPassword: string, newPassword: string } | undefined) => {
-          if (password) {
-            return this.auth.updatePassword(password.currentPassword, password.newPassword);
-          }
-          return of(null);
-        })
-      ).subscribe(() => {
-
-      });
+    ).afterClosed()
+    .pipe(
+      filter(x => x)
+    ).subscribe(() => {
+      this.snackbar.open("Password has been updated.");
+    });
   }
-
 }

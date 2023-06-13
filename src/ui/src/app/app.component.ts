@@ -34,7 +34,9 @@ export class AppComponent {
   }
 
   public logIn() {
-    this.dialog.open(LoginComponent);
+    this.dialog.open(LoginComponent, {
+      panelClass: "dialog-md"
+    });
   }
 
   public logOut() {

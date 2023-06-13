@@ -12,6 +12,9 @@ import { AuthService } from '../services/auth.service';
 export const IGNORE_AUTH_HEADER_NAME = "X-Ignore-Auth-Interceptor";
 export const IGNORE_AUTH_HEADER = { [IGNORE_AUTH_HEADER_NAME]: "true" };
 
+/**
+ * Adds an Authorization header to each request.
+ */
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
@@ -26,7 +29,6 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(request);
     }
 
-    // TODO: Implement auto refresh
     return this.auth.isAuthenticated$.pipe(
       take(1),
       switchMap(isAuthenticated =>

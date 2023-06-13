@@ -1,6 +1,8 @@
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
+import { AuthService } from 'src/app/services/auth.service';
 import { passwordComplexityValidator } from 'src/app/utils/password-utils';
 
 const passwordsMatch = (control: AbstractControl) => {
@@ -29,6 +31,7 @@ export class ChangePasswordModalComponent implements OnInit {
 
   constructor(
     private matDialogRef: MatDialogRef<ChangePasswordModalComponent>,
+    private auth: AuthService,
     fb: FormBuilder
   ) {
     this.form = fb.group({
@@ -67,10 +70,24 @@ export class ChangePasswordModalComponent implements OnInit {
     event.preventDefault();
 
     if (this.form.valid) {
-      this.matDialogRef.close({
-        'currentPassword': this.currentPassword.value,
-        'newPassword': this.newPassword.value
+
+      this.error = null;
+
+      this.auth.updatePassword(this.currentPassword.value, this.newPassword.value).subscribe({
+        next: () => {
+          this.matDialogRef.close(true);
+        },
+        error: (err: HttpErrorResponse) => {
+          if (err.status == HttpStatusCode.Unauthorized) {
+            this.currentPassword.setErrors({ "invalid": true });
+          }
+          else {
+            this.error = "There was a problem updating your password. Please try again."
+          }
+        }
       });
+
+      
     }
   }
 

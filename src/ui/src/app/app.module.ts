@@ -115,8 +115,10 @@ Marker.prototype.options.icon = iconDefault;
     NgChartsModule,
   ],
   providers: [
-    AUTH_INTERCEPTOR,
-    UNAUTHORIZED_INTERCEPTOR
+    // Unauthorized interceptor must go first because we need to attach a new auth token after
+    // the old one is refreshed.
+    UNAUTHORIZED_INTERCEPTOR,
+    AUTH_INTERCEPTOR
   ],
   bootstrap: [AppComponent]
 })
