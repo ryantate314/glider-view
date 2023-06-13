@@ -5,7 +5,7 @@ import { Flight, FlightEventType, Occupant, Waypoint } from 'src/app/models/flig
 import { FlightService } from 'src/app/services/flight.service';
 import * as leaflet from 'leaflet';
 import { ChartData, ChartOptions } from 'chart.js';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 import { LineAnnotationOptions } from 'chartjs-plugin-annotation';
 import { UnitUtils } from 'src/app/unit-utils';
 import { AuthService } from 'src/app/services/auth.service';
@@ -31,7 +31,7 @@ const baseChartOptions: ChartOptions<'line'> = {
         //   if (item.label)
         //     return item.label + ": " + item.parsed;
         //   else
-        //     return moment(item.parsed).format('T+HH:mm:ss');
+        //     return dayjs(item.parsed).format('T+HH:mm:ss');
         // }
       }
     }
@@ -56,7 +56,7 @@ const baseChartOptions: ChartOptions<'line'> = {
         // callback: function(value, index, ticks) {
         //   // value is the index. Must call getLabelforValue to get the actual value.
         //   const self = <any>this;
-        //   return moment(self.getLabelForValue(value)).format('T+HH:mm:ss')
+        //   return dayjs(self.getLabelForValue(value)).format('T+HH:mm:ss')
         // }
       }
     }
@@ -64,9 +64,9 @@ const baseChartOptions: ChartOptions<'line'> = {
 };
 
 const formatAltitudeLabel = (date: Date, flightStart: Date) =>
-  moment(
-    moment.duration(
-      moment(date).diff(flightStart)
+  dayjs(
+    dayjs.duration(
+      dayjs(date).diff(flightStart)
     )
     .as('milliseconds')
   ).format('T+HH:mm:ss');

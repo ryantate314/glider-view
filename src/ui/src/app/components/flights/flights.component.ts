@@ -8,7 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { UnitUtils } from 'src/app/unit-utils';
 
 import { AddFlightModalComponent } from '../add-flight-modal/add-flight-modal.component';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 import { SettingsService } from 'src/app/services/settings.service';
 import { Scopes, User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
@@ -38,7 +38,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   /** An array of all flights in the current week. This prevents making an API call when changing dates with in the same week. */
   private allFlights$: Observable<Flight[]>;
-  public date$: Observable<moment.Moment>;
+  public date$: Observable<dayjs.Dayjs>;
   public flights$: Observable<Flight[]>;
   public weekDays$: Observable<WeekDay[]>;
   public isLoading$ = new BehaviorSubject<boolean>(true);
@@ -81,9 +81,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
     this.date$ = this.route.params.pipe(
       map(params => {
-        let date = moment().startOf('day');
+        let date = dayjs().startOf('day');
         if (params["date"])
-          date = moment(params["date"])
+          date = dayjs(params["date"])
             .startOf('day');
         return date;
       })
@@ -137,7 +137,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       this.date$
     ]).pipe(
       map(([flights, date]) => flights.filter(x =>
-        moment(date).isSame(x.startDate, 'day')))
+        dayjs(date).isSame(x.startDate, 'day')))
     );
 
     this.flights$ = combineLatest([
@@ -197,7 +197,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     this.canManageFlights$ = this.auth.hasScope(Scopes.ManageFlights);
   }
 
-  private groupFlightsIntoDays(date: moment.Moment, flights: Flight[]): WeekDay[] {
+  private groupFlightsIntoDays(date: dayjs.Dayjs, flights: Flight[]): WeekDay[] {
 
     const days = [];
     const dateIterator = date.clone().startOf('isoWeek');
@@ -222,7 +222,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.date$.pipe(
-      map(date => date.isSame(moment(), 'day') ?
+      map(date => date.isSame(dayjs(), 'day') ?
         'Flights'
         : `Flights - ${date.format('M/D/YYYY')}`)
     ).subscribe(title =>
@@ -281,7 +281,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   public onDateChange(event: MatDatepickerInputEvent<Date>) {
     const newDate = event.value
-    this.router.navigate(["/flights/dashboard", `${moment(newDate!).format('YYYY-MM-DD')}`])
+    this.router.navigate(["/flights/dashboard", `${dayjs(newDate!).format('YYYY-MM-DD')}`])
   }
 
 
@@ -316,7 +316,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     );
   }
 
-  private navigateToDate(date: moment.Moment) {
+  private navigateToDate(date: dayjs.Dayjs) {
     this.router.navigate([
       '/flights/dashboard',
       date.format('YYYY-MM-DD')

@@ -2,6 +2,11 @@ import { NgModule } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http'
 import { BrowserModule } from '@angular/platform-browser';
 
+import * as dayjs from 'dayjs';
+import * as duration from 'dayjs/plugin/duration';
+import * as isoWeek from 'dayjs/plugin/isoWeek';
+import * as utc from 'dayjs/plugin/utc';
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { FlightsComponent } from './components/flights/flights.component';
@@ -50,6 +55,10 @@ import { AssignPilotModalComponent } from './components/assign-pilot-modal/assig
 import { UNAUTHORIZED_INTERCEPTOR } from './interceptors/unauthorized.interceptor';
 
 Chart.register(Annotation);
+
+dayjs.extend(duration);
+dayjs.extend(isoWeek);
+dayjs.extend(utc);
 
 const iconRetinaUrl = "assets/leaflet/marker-icon-2x.png";
 const iconUrl = "assets/leaflet/marker-icon.png";

@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 
 @Pipe({
   name: 'flightDuration'
@@ -10,12 +10,12 @@ export class FlightDurationPipe implements PipeTransform {
     if (seconds === null)
       return "";
 
-    const duration = moment.duration(seconds, 'second');
+    const duration = dayjs.duration(seconds, 'second');
     if (seconds > 60 * 60)
-      return moment.utc(duration.as('milliseconds'))
+      return dayjs.utc(duration.as('milliseconds'))
         .format('H[h]m[m]s[s]')
     else if (seconds > 60)
-      return moment.utc(duration.as('milliseconds'))
+      return dayjs.utc(duration.as('milliseconds'))
         .format('m[m]s[s]')
     else
       return seconds + "s";

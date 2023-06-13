@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 import { map, Observable, of, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { IGNORE_AUTH_HEADER } from '../interceptors/auth.interceptor';
@@ -14,7 +14,7 @@ import { FlightService } from './flight.service';
 export class UserService {
 
   private userCache: {
-    expires: moment.Moment,
+    expires: dayjs.Dayjs,
     users: User[]
   } | null = null;
   
@@ -57,7 +57,7 @@ export class UserService {
   }
 
   getAll(): Observable<User[]> {
-    if (this.userCache != null && moment().isBefore(this.userCache.expires)) {
+    if (this.userCache != null && dayjs().isBefore(this.userCache.expires)) {
       return of(this.userCache.users);
     }
 
@@ -66,7 +66,7 @@ export class UserService {
     ).pipe(
       tap(users => {
         this.userCache = {
-          expires: moment().add(5, 'minutes'),
+          expires: dayjs().add(5, 'minutes'),
           users: users
         }
       })

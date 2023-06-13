@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, distinctUntilChanged, map, Observable, shareReplay, switchMap, tap, withLatestFrom } from 'rxjs';
 import { Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 import { Leaderboard } from 'src/app/models/leaderboard.model';
 import { LeaderboardService } from 'src/app/services/leaderboard.service';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
@@ -29,8 +29,8 @@ export class LeaderboardComponent implements OnInit {
   ) {
     this.date$ = this.route.paramMap.pipe(
       map(params => params.get('date') ?
-      // use moment to avoid daylight savings time errors
-        moment(params.get('date')!).toDate()
+      // use dayjs to avoid daylight savings time errors
+        dayjs(params.get('date')!).toDate()
         : new Date()
       ),
       distinctUntilChanged()
@@ -49,7 +49,7 @@ export class LeaderboardComponent implements OnInit {
   public onDateChange(event: MatDatepickerInputEvent<Date>) {
     const newDate = event.value
     console.log("New date: ", newDate);
-    this.router.navigate(["leaderboard", `${moment(newDate!).format('YYYY-MM-DD')}`])
+    this.router.navigate(["leaderboard", `${dayjs(newDate!).format('YYYY-MM-DD')}`])
   }
 
   public formatDistance(meters: number | null) {
