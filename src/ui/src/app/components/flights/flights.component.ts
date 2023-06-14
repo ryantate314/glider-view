@@ -200,7 +200,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   private groupFlightsIntoDays(date: dayjs.Dayjs, flights: Flight[]): WeekDay[] {
 
     const days = [];
-    const dateIterator = date.clone().startOf('isoWeek');
+    let dateIterator = date.clone().startOf('isoWeek');
 
     for (let i = 0; i < 7; i++) {
 
@@ -214,7 +214,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       };
       days.push(day);
 
-      dateIterator.add(1, 'days');
+      dateIterator = dateIterator.add(1, 'days');
     }
 
     return days;
@@ -283,7 +283,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     const newDate = event.value
     this.router.navigate(["/flights/dashboard", `${dayjs(newDate!).format('YYYY-MM-DD')}`])
   }
-
 
   public navigateWeekForward() {
     of(true).pipe(
