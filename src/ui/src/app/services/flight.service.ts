@@ -120,11 +120,11 @@ export class FlightService {
   public static parseFlight(flight: Flight): Flight {
     return {
       ...flight,
-      startDate: new Date(flight.startDate + "Z"),
-      endDate: new Date(flight.endDate + "Z"),
+      startDate: new Date(flight.startDate),
+      endDate: new Date(flight.endDate!),
       waypoints: flight.waypoints == null ? null : flight.waypoints.map(waypoint => ({
         ...waypoint,
-        time: new Date(waypoint.time + "Z")
+        time: new Date(waypoint.time)
       }))
     };
   }

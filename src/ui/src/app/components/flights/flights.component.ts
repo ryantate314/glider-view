@@ -200,7 +200,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   private groupFlightsIntoDays(date: dayjs.Dayjs, flights: Flight[]): WeekDay[] {
 
     const days = [];
-    let dateIterator = date.clone().startOf('isoWeek');
+    let dateIterator = date.startOf('isoWeek');
 
     for (let i = 0; i < 7; i++) {
 

@@ -485,10 +485,10 @@ END CATCH
 
             return new Service.Models.Flight()
             {
-                EndDate = flight.EndDate,
+                EndDate = DateTime.SpecifyKind(flight.EndDate, DateTimeKind.Utc),
                 FlightId = flight.FlightId,
                 IgcFileName = flight.IgcFilename,
-                StartDate = flight.StartDate,
+                StartDate = DateTime.SpecifyKind(flight.StartDate, DateTimeKind.Utc),
                 Aircraft = flight.AircraftId == null
                     ? null
                     : new Aircraft()

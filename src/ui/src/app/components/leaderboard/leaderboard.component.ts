@@ -31,7 +31,7 @@ export class LeaderboardComponent implements OnInit {
       map(params => params.get('date') ?
       // use dayjs to avoid daylight savings time errors
         dayjs(params.get('date')!).toDate()
-        : new Date()
+        : dayjs().startOf('day').toDate()
       ),
       distinctUntilChanged()
     );

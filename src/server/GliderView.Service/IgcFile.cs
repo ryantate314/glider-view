@@ -18,7 +18,13 @@ namespace GliderView.Service
             public double Longitude { get; set; }
         }
 
+        /// <summary>
+        /// The aircraft model name, e.g. PW-6
+        /// </summary>
         public string GliderType { get; set; }
+        /// <summary>
+        /// The aircraft's registration number, i.e. N-number.
+        /// </summary>
         public string GliderId { get; set; }
 
         public DateTime DateOfFlight { get; set; }
@@ -44,7 +50,7 @@ namespace GliderView.Service
                 {
                     if (line.StartsWith("B") && previousTimestamp != null)
                     {
-                        var waypoint = ParseWaypoint(previousTimestamp.Value, line);
+                        Waypoint waypoint = ParseWaypoint(previousTimestamp.Value, line);
                         previousTimestamp = waypoint.Time;
 
                         parsedFile.Waypoints.Add(
@@ -68,6 +74,7 @@ namespace GliderView.Service
 
                         int year = 2000 + Int32.Parse(date.Substring(4, 2));
 
+                        // The HFDTE header is the date the aircraft LANDED in UTC
                         parsedFile.DateOfFlight = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
 
                         previousTimestamp = parsedFile.DateOfFlight;
@@ -78,11 +85,27 @@ namespace GliderView.Service
             if (parsedFile.DateOfFlight == default
                 || String.IsNullOrEmpty(parsedFile.GliderId)
             )
-            {
                 throw new Exception("Invalid IGC File");
-            }
+
+            if (parsedFile.Waypoints.Count >= 2
+                && parsedFile.Waypoints.First().Time.Date != parsedFile.Waypoints.Last().Time.Date
+            )
+                SubtractOneDay(parsedFile);
 
             return parsedFile;
+        }
+
+        /// <summary>
+        /// Because the flight date is the date the aircraft LANDED, subtract 1 day from all dates to change it
+        /// to the date the aircraft took off.
+        /// </summary>
+        /// <param name="parsedFile"></param>
+        private static void SubtractOneDay(IgcFile parsedFile)
+        {
+            parsedFile.DateOfFlight = parsedFile.DateOfFlight.AddDays(-1);
+
+            foreach (var waypoint in parsedFile.Waypoints)
+                waypoint.Time = waypoint.Time.AddDays(-1);
         }
 
         private static Waypoint ParseWaypoint(DateTime previousTimestamp, string line)
