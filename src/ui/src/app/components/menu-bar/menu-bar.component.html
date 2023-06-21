@@ -1,0 +1,42 @@
+<mat-toolbar color="primary">
+    <a [routerLink]="['/']" class="navbar-brand me-2">
+        <h1>Glider Viewer</h1>
+    </a>
+    <div class="d-none d-sm-block">
+        <a mat-button *ngIf="canViewAllUsers$ | async" [routerLink]="['/pilots']">Pilots</a>
+        <a mat-button *ngIf="user$ | async" [routerLink]="['/leaderboard']">Leaderboard</a>
+        <a *ngIf="canViewAllUsers$ | async" href="/igc-files/" target="_blank" mat-button>IGC File Repository</a>
+    </div>
+
+    <span class="flex-spacer"></span>
+
+    <div class="d-none d-sm-block">
+        <a mat-button class="ms-2" (click)="logIn()" *ngIf="!(isAuthenticated$ | async)">Log In</a>
+        <a mat-button class="ms-2" [matMenuTriggerFor]="profileMenu" *ngIf="user$ | async as user">
+            <mat-icon class="me-1">account_circle</mat-icon>
+            {{ user.name }}
+        </a>
+        <mat-menu #profileMenu="matMenu">
+            <a mat-menu-item [routerLink]="['/user/profile']">My Profile</a>
+            <a mat-menu-item [routerLink]="['/user/logbook']">Logbook</a>
+            <button mat-menu-item (click)="logOut()">Log Out</button>
+        </mat-menu>
+    </div>
+
+    <!-- Mobile Collapsed Navbar -->
+    <button mat-icon-button class="d-sm-none flex-right" [matMenuTriggerFor]="menu">
+        <mat-icon>menu</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+        <button mat-menu-item class="ms-2" (click)="logIn()" *ngIf="!(isAuthenticated$ | async)">Log In</button>
+        <ng-container *ngIf="user$ | async as user">
+            <a mat-menu-item [routerLink]="['/user/profile']">My Profile</a>
+            <a mat-menu-item [routerLink]="['/user/logbook']">Logbook</a>
+            <button mat-menu-item (click)="logOut()">Log Out</button>
+        </ng-container>
+        <a mat-menu-item *ngIf="canViewAllUsers$ | async" [routerLink]="['/pilots']">Pilots</a>
+        <a mat-menu-item *ngIf="user$ | async" [routerLink]="['/leaderboard']">Leaderboard</a>
+        <a *ngIf="canViewAllUsers$ | async" href="/igc-files/" target="_blank" mat-menu-item>IGC File Repository</a>
+    </mat-menu>
+    
+</mat-toolbar>

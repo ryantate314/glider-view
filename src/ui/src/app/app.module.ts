@@ -53,6 +53,7 @@ import { FlightDurationPipe } from './pipes/flight-duration.pipe';
 import { FlightDurationDirective } from './directives/flight-duration.directive';
 import { AssignPilotModalComponent } from './components/assign-pilot-modal/assign-pilot-modal.component';
 import { UNAUTHORIZED_INTERCEPTOR } from './interceptors/unauthorized.interceptor';
+import { MenuBarComponent } from './components/menu-bar/menu-bar.component';
 
 Chart.register(Annotation);
 
@@ -92,6 +93,7 @@ Marker.prototype.options.icon = iconDefault;
     FlightDurationPipe,
     FlightDurationDirective,
     AssignPilotModalComponent,
+    MenuBarComponent,
   ],
   imports: [
     BrowserModule,
