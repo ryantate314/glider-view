@@ -377,9 +377,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       return of(false);
 
     return this.user$.pipe(
-      map(user => user == null ?
-        false
-        : flight.occupants!.some(x => x.userId == user.userId))
+      map(user => this.isUserOnFlight(flight, user))
     );
   }
 
@@ -397,8 +395,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     .subscribe(() => this.refreshFlights());
   }
 
-  public isUserOnFlight(flight: Flight, user: User) {
-    return flight.occupants != null && user != null && flight.occupants.some(x => x.userId = user.userId);
+  public isUserOnFlight(flight: Flight, user: User | null) {
+    return flight.occupants != null
+      && user != null
+      && flight.occupants.some(x => x.userId == user.userId);
   }
 
   public uploadIgcFile(event: Event) {

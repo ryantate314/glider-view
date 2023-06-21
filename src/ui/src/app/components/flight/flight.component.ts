@@ -307,7 +307,9 @@ export class FlightComponent implements OnInit, AfterViewInit {
   }
 
   public isUserOnFlight(flight: Flight, user: User) {
-    return flight.occupants != null && user != null && flight.occupants.some(x => x.userId = user.userId);
+    return flight.occupants != null
+      && user != null
+      && flight.occupants.some(x => x.userId == user.userId);
   }
 
   public addToLogbook(flight: Flight, user: User) {
