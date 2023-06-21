@@ -420,6 +420,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
   public formatGliderName(flight: Flight) {
     const aircraftDescription = flight.aircraft?.description ?? "Unknown Glider";
+
+    if (flight.contestId == null && flight.aircraft?.registrationId == null)
+      return aircraftDescription;
     
     return `${aircraftDescription} (${flight.contestId ?? flight.aircraft?.registrationId ?? "NOID"})`;
   }
