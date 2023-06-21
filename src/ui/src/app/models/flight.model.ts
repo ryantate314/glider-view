@@ -7,6 +7,7 @@ export interface Flight {
      */
     duration: number | null;
     igcFileName: string | null;
+    contestId: string | null;
     
     aircraft: Aircraft | null;
     towFlight: Flight | null;

@@ -170,6 +170,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
               startDate: flight.startDate,
               endDate: null,
               igcFileName: null,
+              contestId: null,
               statistics: {
                 releaseHeight: flight.statistics?.maxAltitude ?? null,
                 altitudeGained: null,
@@ -417,10 +418,9 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     })
   }
 
-  public formatGliderName(aircraft: Aircraft | null) {
-    if (aircraft == null)
-      return "Unknown Glider";
+  public formatGliderName(flight: Flight) {
+    const aircraftDescription = flight.aircraft?.description ?? "Unknown Glider";
     
-    return `${aircraft.description} (${aircraft.registrationId})`;
+    return `${aircraftDescription} (${flight.contestId ?? flight.aircraft?.registrationId ?? "NOID"})`;
   }
 }

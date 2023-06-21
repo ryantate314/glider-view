@@ -37,5 +37,6 @@ namespace GliderView.Data.Models
         public int? AltitudeGained { get; set; }
         public int? ReleaseHeight { get; set; }
         public int? PatternEntryAltitude { get; set; }
+        public string? ContestId { get; set; }
     }
 }

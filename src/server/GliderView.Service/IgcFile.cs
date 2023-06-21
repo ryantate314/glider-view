@@ -29,6 +29,8 @@ namespace GliderView.Service
 
         public DateTime DateOfFlight { get; set; }
 
+        public string ContestId { get; set; }
+
         public List<Waypoint> Waypoints { get; set; } = new List<Waypoint>();
 
         public static IgcFile Parse(Stream fileStream)
@@ -36,6 +38,7 @@ namespace GliderView.Service
             const string GLIDER_TYPE = "HFGTYGLIDERTYPE";
             const string GLIDER_ID = "HFGIDGLIDERID";
             const string DATE = "HFDTE";
+            const string CONTEST_ID = "HFCIDCOMPETITIONID";
 
             var parsedFile = new IgcFile();
 
@@ -78,6 +81,10 @@ namespace GliderView.Service
                         parsedFile.DateOfFlight = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
 
                         previousTimestamp = parsedFile.DateOfFlight;
+                    }
+                    else if (line.StartsWith(CONTEST_ID))
+                    {
+                        parsedFile.ContestId = line.Split(':')[1];
                     }
                 }
             }

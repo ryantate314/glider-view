@@ -17,6 +17,9 @@
         }
         public string? IgcFileName { get; set; }
 
+        // Setting this at the flight level because it is tied to the pilot, not the glider.
+        public string? ContestId { get; set; }
+
         public List<Waypoint>? Waypoints { get; set; }
         public Aircraft? Aircraft { get; set; }
         public Flight? TowFlight { get; set; }

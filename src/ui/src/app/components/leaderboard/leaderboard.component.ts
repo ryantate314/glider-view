@@ -75,4 +75,14 @@ export class LeaderboardComponent implements OnInit {
     return pilots;
   }
 
+  public formatAircraft(flight: Flight): string {
+    let description = flight.aircraft?.description ?? "Unknown";
+
+    if (flight.contestId) {
+      description = description + " (" + flight.contestId + ")";
+    }
+
+    return description;
+  }
+
 }

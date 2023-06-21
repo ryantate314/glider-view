@@ -34,7 +34,14 @@ namespace GliderView.Service
         }
 
 
-        public IgcService(IIgcFileRepository fileRepo, IFlightRepository flightRepo, ILogger<IgcService> logger, IOgnDeviceDatabaseProvider ognProvider, IFlightBookClient flightBookClient, IFlightAnalyzer flightAnalyzer)
+        public IgcService(
+            IIgcFileRepository fileRepo,
+            IFlightRepository flightRepo,
+            ILogger<IgcService> logger,
+            IOgnDeviceDatabaseProvider ognProvider,
+            IFlightBookClient flightBookClient,
+            IFlightAnalyzer flightAnalyzer
+        )
         {
             _fileRepo = fileRepo;
             _flightRepo = flightRepo;
@@ -187,6 +194,7 @@ namespace GliderView.Service
                 StartDate = file.Waypoints.Select(x => (DateTime?)x.Time)
                     .Min() ?? eventDate,
                 IgcFileName = fileName,
+                ContestId = file.ContestId,
                 Waypoints = MapWaypoints(file.Waypoints)
             };
 
@@ -313,6 +321,8 @@ namespace GliderView.Service
                     .Max() ?? parsedFile.DateOfFlight;
             flight.StartDate = flight.Waypoints.Select(x => (DateTime?)x.Time)
                 .Min() ?? parsedFile.DateOfFlight;
+
+            flight.ContestId = parsedFile.ContestId;
 
             // Recalculate statistics
             try

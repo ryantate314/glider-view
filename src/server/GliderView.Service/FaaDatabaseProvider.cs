@@ -9,6 +9,7 @@ using System.Xml.XPath;
 
 namespace GliderView.Service
 {
+    /// <inheritdoc/>
     public class FaaDatabaseProvider : IFaaDatabaseProvider
     {
         public class Aircraft

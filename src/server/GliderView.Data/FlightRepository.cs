@@ -23,6 +23,7 @@ SELECT
     , F.StartDate
     , F.EndDate
     , F.IgcFilename
+    , F.ContestId
 
     -- The tow plane flight
     , Tow.FlightGuid AS TowFlightId
@@ -234,6 +235,7 @@ INSERT INTO dbo.Flight (
     , AircraftId
     , TowId
     , IgcFilename
+    , ContestId
 )
 VALUES (
     @startDate
@@ -253,6 +255,7 @@ VALUES (
             AND F.IsDeleted = 0
     )
     , @igcFileName
+    , @contestId
 );
 
 SELECT
@@ -266,7 +269,8 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                 flight.EndDate,
                 flight.Aircraft?.AircraftId,
                 TowFlightId = flight.TowFlight?.FlightId,
-                flight.IgcFileName
+                flight.IgcFileName,
+                flight.ContestId
             };
             return tran.Connection.ExecuteScalarAsync<Guid>(sql, flightArgs, tran);
 
@@ -489,6 +493,7 @@ END CATCH
                 FlightId = flight.FlightId,
                 IgcFileName = flight.IgcFilename,
                 StartDate = DateTime.SpecifyKind(flight.StartDate, DateTimeKind.Utc),
+                ContestId = flight.ContestId,
                 Aircraft = flight.AircraftId == null
                     ? null
                     : new Aircraft()
@@ -765,6 +770,7 @@ WHERE F.IsDeleted = 0
 UPDATE dbo.Flight
     SET StartDate = @startDate
     , EndDate = @endDate
+    , ContestId = @contestId
     , ModifiedDate = CURRENT_TIMESTAMP
 WHERE FlightGuid = @flightId
     AND IsDeleted = 0;
@@ -774,9 +780,10 @@ WHERE FlightGuid = @flightId
             {
                 var args = new
                 {
-                    FlightId = flight.FlightId,
-                    StartDate = flight.StartDate,
-                    EndDate = flight.EndDate
+                    flight.FlightId,
+                    flight.StartDate,
+                    flight.EndDate,
+                    flight.ContestId
                 };
                 await tran.Connection.ExecuteAsync(sql, args, tran);
 

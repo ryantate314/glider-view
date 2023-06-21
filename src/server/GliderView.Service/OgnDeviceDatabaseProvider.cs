@@ -9,11 +9,16 @@ using static System.Net.WebRequestMethods;
 
 namespace GliderView.Service
 {
+    /// <summary>
+    /// A client to the Open Glider Network device database. It provides that ability to
+    /// look up aircraft information based on tracker ID.
+    /// </summary>
     public interface IOgnDeviceDatabaseProvider
     {
         Task<OgnDeviceDatabaseProvider.AircraftInfo?> GetAircraftInfo(string trackerId);
     }
 
+    /// <inheritdoc/>
     public class OgnDeviceDatabaseProvider : IOgnDeviceDatabaseProvider
     {
         private readonly IHttpClientFactory _httpClient;
@@ -64,7 +69,7 @@ namespace GliderView.Service
             public string Registration { get; set; }
 
             [JsonPropertyName("cn")]
-            public string RacingNumber { get; set; }
+            public string ContestNumber { get; set; }
 
             /// <summary>
             /// <see cref="OgnDeviceDatabaseProvider.AircraftType"/>
