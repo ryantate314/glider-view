@@ -83,8 +83,7 @@ export class LogbookComponent implements OnInit {
     );
 
     this.numPages$ = this.allFlights$.pipe(
-      map(x => Math.ceil(x.length / pageSize)),
-      map(x => 4) // TODO REMOVE
+      map(x => Math.ceil(x.length / pageSize))
     );
 
     this.pageInfo$ = combineLatest([
