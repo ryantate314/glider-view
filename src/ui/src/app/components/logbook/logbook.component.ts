@@ -83,7 +83,8 @@ export class LogbookComponent implements OnInit {
     );
 
     this.numPages$ = this.allFlights$.pipe(
-      map(x => Math.ceil(x.length / pageSize))
+      map(x => Math.ceil(x.length / pageSize)),
+      map(x => 4) // TODO REMOVE
     );
 
     this.pageInfo$ = combineLatest([
@@ -105,11 +106,13 @@ export class LogbookComponent implements OnInit {
 
   private generatePageInfo(currentPage: number, numPages: number): PageInfo {
     let links: number[] = [currentPage];
+    // First page
     if (currentPage == 0 && numPages > 1)
       for (let i = 1; i < Math.min(3, numPages); i++)
         links.push(i);
+    // Last page
     else if (currentPage == (numPages - 1) && numPages > 1)
-      for (let i = currentPage - 1; i> Math.max(0, currentPage - 3); i--)
+      for (let i = currentPage - 1; i >= Math.max(0, currentPage - 2); i--)
         links = [i, ...links];
     else if (numPages > 2)
       links = [currentPage - 1, currentPage, currentPage + 1];
