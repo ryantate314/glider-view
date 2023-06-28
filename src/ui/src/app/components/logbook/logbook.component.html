@@ -81,7 +81,7 @@
                     </a>
                 </li>
                 <li class="page-item" *ngFor="let page of pageInfo.links">
-                    <a class="page-link" [routerLink]="['./']" [queryParams]="{ page: page }" [class.disabled]="page == pageInfo.page">{{ +page + 1 }}</a>
+                    <a class="page-link" [routerLink]="['./']" [queryParams]="{ page: page }" [class.disabled]="page == pageInfo.page">{{ page + 1 }}</a>
                 </li>
                 <li class="page-item">
                     <a class="page-link" [routerLink]="['./']" [queryParams]="{ page: pageInfo.page + 1 }"aria-label="Next" [class.disabled]="!pageInfo.nextEnabled">

@@ -67,7 +67,7 @@ export class LogbookComponent implements OnInit {
     );
 
     this.page$ = this.route.queryParams.pipe(
-      map(params => params["page"] ?? 0)
+      map(params => params["page"] ? +params["page"] : 0)
     );
 
     this.allFlights$ = combineLatest([
