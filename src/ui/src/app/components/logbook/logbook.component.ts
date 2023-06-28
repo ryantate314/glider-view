@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { combineLatest, iif, map, Observable, of, startWith, Subject, switchMap, withLatestFrom } from 'rxjs';
+import { combineLatest, iif, map, Observable, of, shareReplay, startWith, Subject, switchMap, withLatestFrom } from 'rxjs';
 import { LogBookEntry } from 'src/app/models/flight.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { FlightService } from 'src/app/services/flight.service';
@@ -13,6 +13,19 @@ const sortEntries = (a: LogBookEntry, b: LogBookEntry) =>
     ? a.flight.startDate.getTime() - b.flight.startDate.getTime()
     : a.flightNumber - b.flightNumber;
 
+const pageSize = 10;
+
+interface PageInfo {
+  page: number;
+  numPages: number;
+  pageSize: number;
+
+  nextEnabled: boolean;
+  previousEnabled: boolean;
+
+  links: number[];
+}
+
 @Component({
   selector: 'app-logbook',
   templateUrl: './logbook.component.html',
@@ -20,8 +33,13 @@ const sortEntries = (a: LogBookEntry, b: LogBookEntry) =>
 })
 export class LogbookComponent implements OnInit {
 
+  public allFlights$: Observable<LogBookEntry[]>;
   public flights$: Observable<LogBookEntry[]>;
   public userId$: Observable<string>;
+  
+  private page$: Observable<number>;
+  private numPages$: Observable<number>;
+  public pageInfo$: Observable<PageInfo>;
 
   private refresh$ = new Subject<void>();
 
@@ -48,7 +66,11 @@ export class LogbookComponent implements OnInit {
       )
     );
 
-    this.flights$ = combineLatest([
+    this.page$ = this.route.queryParams.pipe(
+      map(params => params["page"] ?? 0)
+    );
+
+    this.allFlights$ = combineLatest([
       this.userId$,
       this.refresh$.pipe(
         startWith(null)
@@ -56,8 +78,50 @@ export class LogbookComponent implements OnInit {
     ]).pipe(
       map(([userId, _]) => userId),
       switchMap(userId => this.userService.getLogbook(userId)),
-      map(entries => [...entries].sort(sortEntries))
+      map(entries => [...entries].sort(sortEntries)),
+      shareReplay(1)
     );
+
+    this.numPages$ = this.allFlights$.pipe(
+      map(x => Math.ceil(x.length / pageSize))
+    );
+
+    this.pageInfo$ = combineLatest([
+      this.page$,
+      this.numPages$
+    ]).pipe(
+      map(([page, numPages]) => this.generatePageInfo(page, numPages))
+    );
+
+    this.flights$ = combineLatest([
+      this.allFlights$,
+      this.page$
+    ]).pipe(
+      map(([flights, page]) =>
+        flights.slice(page * pageSize, page * pageSize + pageSize)
+      )
+    );
+  }
+
+  private generatePageInfo(currentPage: number, numPages: number): PageInfo {
+    let links: number[] = [currentPage];
+    if (currentPage == 0 && numPages > 1)
+      for (let i = 1; i < Math.min(3, numPages); i++)
+        links.push(i);
+    else if (currentPage == (numPages - 1) && numPages > 1)
+      for (let i = currentPage - 1; i> Math.max(0, currentPage - 3); i--)
+        links = [i, ...links];
+    else if (numPages > 2)
+      links = [currentPage - 1, currentPage, currentPage + 1];
+
+    return {
+      page: currentPage,
+      numPages: numPages,
+      nextEnabled: currentPage < numPages - 1,
+      previousEnabled: currentPage > 0,
+      pageSize: pageSize,
+      links: links
+    };
   }
 
   ngOnInit(): void {

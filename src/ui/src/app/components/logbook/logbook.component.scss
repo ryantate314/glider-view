@@ -1,3 +1,10 @@
 tr.clickable {
     cursor: pointer;
 }
+
+.table-responsive {
+    table {
+        min-width: 800px;
+    }
+    
+}

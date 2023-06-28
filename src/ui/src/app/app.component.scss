@@ -1,13 +1,13 @@
 @import './../theme.scss';
 
 main {
-    min-height: 90vh;
+    min-height: 95vh;
 }
 
 footer {
     padding-top: 1em;
     padding-bottom: 1em;
-    background-color: $color-primary;
+    background-color: $color-gray;
     color: white;
 
     img {
