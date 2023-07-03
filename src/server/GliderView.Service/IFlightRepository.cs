@@ -28,5 +28,6 @@ namespace GliderView.Service
         Task UpdateFlightEvents(Flight flight);
         Task UpsertFlightStatistics(Flight flight);
         Task DeleteFlight(Guid flightId);
+        Task<Aircraft?> GetAircraftByRegistration(string gliderId);
     }
 }

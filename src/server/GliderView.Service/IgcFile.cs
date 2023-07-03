@@ -29,7 +29,7 @@ namespace GliderView.Service
 
         public DateTime DateOfFlight { get; set; }
 
-        public string ContestId { get; set; }
+        public string? ContestId { get; set; }
 
         public List<Waypoint> Waypoints { get; set; } = new List<Waypoint>();
 
@@ -84,7 +84,8 @@ namespace GliderView.Service
                     }
                     else if (line.StartsWith(CONTEST_ID))
                     {
-                        parsedFile.ContestId = line.Split(':')[1];
+                        string contestId = line.Split(':')[1];
+                        parsedFile.ContestId = contestId == String.Empty ? null : contestId;
                     }
                 }
             }

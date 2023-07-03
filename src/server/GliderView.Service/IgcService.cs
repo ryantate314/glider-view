@@ -103,7 +103,7 @@ namespace GliderView.Service
         private FileNameData? ParseFileName(string filename)
         {
             //2022-11-13_N2750H.C7720C.igc
-            var regex = new Regex(@"^([0-9\-]+)_([A-Za-z0-9]+)\.([A-Za-z0-9]+)(_[0-9]+)?\.igc$");
+            var regex = new Regex(@"^([0-9\-]+)_([A-Za-z0-9]+)\.([A-Za-z0-9]+)(_[0-9]+)?\.[iI][gG][cC]$");
             var match = regex.Match(filename);
             if (!match.Success)
                 return null;
@@ -126,15 +126,46 @@ namespace GliderView.Service
         public async Task<Flight> UploadAndProcess(string fileName, Stream stream, string airfield)
         {
             IgcFile parsedFile = IgcFile.Parse(stream);
-            
+
+
             string? trackerId = GetTrackerFromFilename(fileName);
+
+            var glider = new Lazy<Task<Aircraft?>>(() =>
+                _flightRepo.GetAircraftByRegistration(parsedFile.GliderId)
+            );
+
+            if (trackerId == null)
+            {
+                // Attempt to get the tracker ID from the existing aircraft DB entry.
+                trackerId = (await glider.Value)?.TrackerId;
+            }
 
             if (trackerId == null)
                 throw new ArgumentException("IGC file name is not in the correct format.");
 
+            if (parsedFile.ContestId == null && (await glider.Value) != null)
+            {
+                parsedFile.ContestId = await GetPreviousContestId((await glider.Value)!.AircraftId);
+            }
+
             string internalFileName = await _fileRepo.SaveFile(stream, airfield, parsedFile.GliderId, trackerId, parsedFile.DateOfFlight);
            
             return await ProcessIgcFile(internalFileName, parsedFile, airfield, trackerId);
+        }
+
+        private async Task<string?> GetPreviousContestId(Guid aircraftId)
+        {
+            _logger.LogDebug("Attempting to find prevous contest ID for aircraft {0}", aircraftId);
+
+            List<Flight> flights = await _flightRepo.GetFlights(new FlightSearch()
+            {
+                AircraftId = aircraftId
+            });
+
+            return flights.Where(x => !String.IsNullOrEmpty(x.ContestId))
+                .OrderByDescending(x => x.StartDate)
+                .FirstOrDefault()
+                ?.ContestId;
         }
 
         //public async Task ProcessWebhook(string airfield, string trackerId, DateTime eventDate)
@@ -322,7 +353,11 @@ namespace GliderView.Service
             flight.StartDate = flight.Waypoints.Select(x => (DateTime?)x.Time)
                 .Min() ?? parsedFile.DateOfFlight;
 
-            flight.ContestId = parsedFile.ContestId;
+            // Contest ID
+            if (parsedFile.ContestId != null)
+                flight.ContestId = parsedFile.ContestId;
+            else if (flight.Aircraft != null)
+                flight.ContestId = await GetPreviousContestId(flight.Aircraft.AircraftId);
 
             // Recalculate statistics
             try

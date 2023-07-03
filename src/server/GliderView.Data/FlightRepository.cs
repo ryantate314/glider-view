@@ -75,8 +75,8 @@ WHERE F.FlightGuid = @flightId
         public async Task<List<Service.Models.Flight>> GetFlights(FlightSearch search)
         {
             const string sql = FLIGHT_SELECT + @"
-WHERE F.StartDate >= @startDate
-    AND F.StartDate <= @endDate
+WHERE (@startDate IS NULL OR F.StartDate >= @startDate)
+    AND (@endDate IS NULL OR F.StartDate <= @endDate)
     AND (@aircraftId IS NULL OR A.AircraftGuid = @aircraftId)
     AND (@pilotId IS NULL OR EXISTS (
         SELECT
@@ -807,6 +807,26 @@ WHERE FlightGuid = @flightId
             using (var con = await GetOpenConnectionAsync())
             {
                 await con.ExecuteAsync(sql, new { flightId });
+            }
+        }
+
+        public async Task<Aircraft?> GetAircraftByRegistration(string registrationId)
+        {
+            const string sql = @"
+SELECT
+    A.AircraftGuid AS AircraftId
+    , A.Description
+    , A.TrackerId
+    , A.Registration AS RegistrationId
+    , A.NumSeats
+    , A.IsGlider
+FROM dbo.Aircraft A
+WHERE A.Registration = @registrationId
+    AND A.IsDeleted = 0;
+";
+            using (var con = await GetOpenConnectionAsync())
+            {
+                return await con.QueryFirstOrDefaultAsync<Aircraft?>(sql, new { registrationId });
             }
         }
     }
