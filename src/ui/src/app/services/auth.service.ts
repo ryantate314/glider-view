@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { catchError, distinctUntilChanged, map, Observable, of, ReplaySubject, shareReplay, startWith, throwError, withLatestFrom } from 'rxjs';
 import { Scopes, Token, User, UserLogin } from '../models/user.model';
 import { UserService } from './user.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -38,8 +39,11 @@ export class AuthService {
     localStorage.setItem("gliderView-loggedIn", value.toString());
   }
 
-  constructor(private userService: UserService,
-    private http: HttpClient) {
+  constructor(
+    private userService: UserService,
+    private http: HttpClient,
+    private router: Router
+    ) {
   }
 
   public init() {
@@ -56,9 +60,10 @@ export class AuthService {
           )
         ),
         catchError((err: HttpErrorResponse) => {
-          if (err.status === 401)
-            return of([undefined, null]);
-          return throwError(() => err);
+          if (err.status !== 401)
+            this.router.navigate(['/error']);
+
+          return of([undefined, null]);
         })
       ).subscribe(([_, token]) => {
         if (token !== null)

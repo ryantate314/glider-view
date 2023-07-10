@@ -12,6 +12,7 @@ namespace GliderView.Data.Models
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string? IgcFilename { get; set; }
+        public string AirfieldId { get; set; }
 
         // Aircraft
         public Guid? AircraftId { get; set; }

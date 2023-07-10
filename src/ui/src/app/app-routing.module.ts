@@ -9,6 +9,7 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { WelcomeComponent } from './components/welcome/welcome.component';
 import { AuthGuard } from './guards/auth.guard';
 import { Scopes } from './models/user.model';
+import { ErrorComponent } from './components/error/error.component';
 
 const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'flights/dashboard' },
@@ -28,6 +29,7 @@ const routes: Routes = [
   },
   { path: 'leaderboard', component: LeaderboardComponent, canActivate: [AuthGuard] },
   { path: 'leaderboard/:date', component: LeaderboardComponent, canActivate: [AuthGuard] },
+  { path: 'error', component: ErrorComponent }
 ];
 
 @NgModule({

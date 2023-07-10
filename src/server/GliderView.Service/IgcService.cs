@@ -1,5 +1,6 @@
 ﻿using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
+using GliderView.Service.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace GliderView.Service
         private readonly ILogger _logger;
         private readonly IOgnDeviceDatabaseProvider _ognProvider;
         private readonly IFlightBookClient _flightBookClient;
+        private readonly IAirfieldRepo _airfieldRepo;
         private readonly IFlightAnalyzer _flightAnalyzer;
 
         /// <summary>
@@ -40,7 +42,8 @@ namespace GliderView.Service
             ILogger<IgcService> logger,
             IOgnDeviceDatabaseProvider ognProvider,
             IFlightBookClient flightBookClient,
-            IFlightAnalyzer flightAnalyzer
+            IFlightAnalyzer flightAnalyzer,
+            IAirfieldRepo airfieldRepo
         )
         {
             _fileRepo = fileRepo;
@@ -48,6 +51,7 @@ namespace GliderView.Service
             _logger = logger;
             _ognProvider = ognProvider;
             _flightBookClient = flightBookClient;
+            _airfieldRepo = airfieldRepo;
 
             _flightAnalyzer = flightAnalyzer;
         }
@@ -226,7 +230,8 @@ namespace GliderView.Service
                     .Min() ?? eventDate,
                 IgcFileName = fileName,
                 ContestId = file.ContestId,
-                Waypoints = MapWaypoints(file.Waypoints)
+                Waypoints = MapWaypoints(file.Waypoints),
+                AirfieldId = airfield
             };
 
             // See if this flight already exists

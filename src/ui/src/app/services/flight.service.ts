@@ -13,6 +13,7 @@ export class FlightService {
   public static readonly INCLUDE_WAYPOINTS = "waypoints";
   public static readonly INCLUDE_STATISTICS = "statistics";
   public static readonly INCLUDE_PILOTS = "occupants";
+  public static readonly INCLUDE_COST = "cost";
 
   constructor(private http: HttpClient) { }
 

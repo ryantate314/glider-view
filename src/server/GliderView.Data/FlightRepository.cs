@@ -24,6 +24,7 @@ SELECT
     , F.EndDate
     , F.IgcFilename
     , F.ContestId
+    , AF.FaaId AS AirfieldId
 
     -- The tow plane flight
     , Tow.FlightGuid AS TowFlightId
@@ -45,6 +46,8 @@ FROM dbo.Flight F
         ON F.TowId = Tow.FlightId
     LEFT JOIN dbo.Aircraft TowAircraft
         ON Tow.AircraftId = TowAircraft.AircraftId
+    LEFT JOIN dbo.Airfield AF
+        ON F.AirfieldId = AF.AirfieldId
 ";
         private readonly ILogger<FlightRepository> _log;
 
@@ -236,6 +239,7 @@ INSERT INTO dbo.Flight (
     , TowId
     , IgcFilename
     , ContestId
+    , AirfieldId
 )
 VALUES (
     @startDate
@@ -256,6 +260,13 @@ VALUES (
     )
     , @igcFileName
     , @contestId
+    -- AirfieldId
+    , (
+        SELECT
+            AirfieldId
+        FROM dbo.Airfield AF
+        WHERE AF.FaaId = @airfieldId
+    )
 );
 
 SELECT
@@ -270,7 +281,8 @@ WHERE F.FlightId = SCOPE_IDENTITY();
                 flight.Aircraft?.AircraftId,
                 TowFlightId = flight.TowFlight?.FlightId,
                 flight.IgcFileName,
-                flight.ContestId
+                flight.ContestId,
+                flight.AirfieldId
             };
             return tran.Connection.ExecuteScalarAsync<Guid>(sql, flightArgs, tran);
 
@@ -494,6 +506,7 @@ END CATCH
                 IgcFileName = flight.IgcFilename,
                 StartDate = DateTime.SpecifyKind(flight.StartDate, DateTimeKind.Utc),
                 ContestId = flight.ContestId,
+                AirfieldId = flight.AirfieldId,
                 Aircraft = flight.AircraftId == null
                     ? null
                     : new Aircraft()

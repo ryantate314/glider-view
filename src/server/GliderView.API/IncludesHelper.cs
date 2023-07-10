@@ -18,14 +18,15 @@ namespace GliderView.API
         private readonly ILogger _logger;
 
         /// <summary>
-        /// A list of all handlers which have been registered. The dictionary is keyed off of the handler identifier.
+        /// A list of all handlers which have been registered.
         /// </summary>
         private readonly Dictionary<string, IHandler> _handlers;
-
         /// <summary>
-        /// The maximum number of threads used to retrieve child objects.
+        /// A list of handler IDs in the order they were added
         /// </summary>
-        private const int MAX_PARALLELISM = 2;
+        private readonly List<string> _handlerIds;
+
+        public int MaxParallelism { get; set; } = 2;
 
         /// <summary>
         /// Function which retrieves and sets the value of a single property.
@@ -46,6 +47,10 @@ namespace GliderView.API
         // Because the handlers are strongly typed, we can't included them in a polymorphic array. This interface hides the generic TProperty type.
         private interface IHandler
         {
+            string Identifier { get; }
+            bool FailOnError { get; }
+            bool RequireSyncronous { get; }
+
             /// <summary>
             /// Hydrates a single entity.
             /// </summary>
@@ -67,9 +72,43 @@ namespace GliderView.API
         /// <typeparam name="TProperty"></typeparam>
         private class Handler<TProperty> : IHandler
         {
+            public string Identifier
+            {
+                get
+                {
+                    return Config.Identifier;
+                }
+            }
+            public bool FailOnError {
+                get {
+                    return Config.FailOnError;
+                }
+            }
+            public bool RequireSyncronous {
+                get {
+                    return Config.RequireSyncronous;
+                }
+            }
+            public SingleRetrievalFunction<TProperty> SingleRetrievalFunction
+            {
+                get {
+                    return Config.SingleUpdateFunction;
+                }
+            }
+            public MultiplePopulationFunction<TProperty> MultipleUpdateFunction {
+                get {
+                    return Config.MultipleUpdateFunction;
+                }
+            }
+
             public PropertyInfo Property { get; set; }
-            public SingleRetrievalFunction<TProperty> SingleRetrievalFunction { get; set; }
-            public MultiplePopulationFunction<TProperty> MultipleUpdateFunction { get; set; }
+            protected HandlerConfig<TProperty> Config { get; set; }
+
+            public Handler(PropertyInfo property, HandlerConfig<TProperty> config)
+            {
+                Property = property;
+                Config = config;
+            }
 
             public Task Handle(TEntity entity)
             {
@@ -104,6 +143,10 @@ namespace GliderView.API
             /// Method which retrieves and populates the <typeparamref name="TProperty"/> property for the provided list of <typeparamref name="TEntity"/> objects.
             /// </summary>
             public MultiplePopulationFunction<TProperty> MultipleUpdateFunction { get; set; }
+
+            public bool FailOnError { get; set; } = true;
+
+            public bool RequireSyncronous { get; set; } = false;
         }
 
         public IncludeHandler(ILogger logger)
@@ -111,6 +154,7 @@ namespace GliderView.API
             _logger = logger;
 
             _handlers = new Dictionary<string, IHandler>();
+            _handlerIds = new List<string>();
         }
 
         /// <summary>
@@ -150,14 +194,10 @@ namespace GliderView.API
             if (handlerConfig.SingleUpdateFunction == null && handlerConfig.MultipleUpdateFunction == null)
                 throw new InvalidOperationException("At least one retrieval function must be provided.");
 
-            var handler = new Handler<TProperty>()
-            {
-                Property = propInfo,
-                MultipleUpdateFunction = handlerConfig.MultipleUpdateFunction,
-                SingleRetrievalFunction = handlerConfig.SingleUpdateFunction
-            };
+            var handler = new Handler<TProperty>(propInfo, handlerConfig);
 
             _handlers.Add(handlerConfig.Identifier, handler);
+            _handlerIds.Add(handlerConfig.Identifier);
 
             return this;
         }
@@ -177,13 +217,15 @@ namespace GliderView.API
             if (entity == null)
                 return;
 
-            List<string> includeList = ParseIncludeList(includes);
+            IEnumerable<string> includeList = ParseIncludeList(includes);
 
             // Use a cancellation source to stop executing handlers if any of them fails
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+            int maxParallelism = GetParallelism(includeList, MaxParallelism);
+
             //Execute handlers in parallel. Can't use Parallel.ForEach because the handlers are async.
-            using (var threadLimiter = new SemaphoreSlim(MAX_PARALLELISM))
+            using (var threadLimiter = new SemaphoreSlim(maxParallelism))
             {
                 IEnumerable<Task> tasks = includeList.Select(async include =>
                 {
@@ -203,12 +245,19 @@ namespace GliderView.API
                         }
                         catch (Exception ex)
                         {
-                            // Make sure no new tasks are started
-                            cancellationTokenSource.Cancel();
+                            if (_handlers[include].FailOnError)
+                            {
+                                // Make sure no new tasks are started
+                                cancellationTokenSource.Cancel();
 
-                            _logger.LogError($"Error processing include for '{include}': {ex.Message}");
+                                _logger.LogError($"Error processing include for '{include}': {ex.Message}");
 
-                            throw;
+                                throw;
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"Error processing include for '{include}': {ex.Message}");
+                            }
                         }
                     }
                     finally
@@ -237,13 +286,15 @@ namespace GliderView.API
             if (entities.Count == 0)
                 return;
 
-            List<string> includeList = ParseIncludeList(includes);
+            IEnumerable<string> includeList = ParseIncludeList(includes);
 
             // Use a cancellation source to stop executing handlers if any of them fails
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+            int maxParallelism = GetParallelism(includeList, MaxParallelism);
+
             //Execute handlers in parallel. Can't use Parallel.ForEach because the handlers are async.
-            using (var threadLimiter = new SemaphoreSlim(MAX_PARALLELISM))
+            using (var threadLimiter = new SemaphoreSlim(maxParallelism))
             {
                 IEnumerable<Task> tasks = includeList.Select(async include =>
                 {
@@ -263,12 +314,19 @@ namespace GliderView.API
                         }
                         catch (Exception ex)
                         {
-                            // Make sure no new tasks are started
-                            cancellationTokenSource.Cancel();
+                            if (_handlers[include].FailOnError)
+                            {
+                                // Make sure no new tasks are started
+                                cancellationTokenSource.Cancel();
 
-                            _logger.LogError($"Error processing include for '{include}': {ex.Message}");
+                                _logger.LogError($"Error processing include for '{include}': {ex.Message}");
 
-                            throw;
+                                throw;
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"Error processing include for '{include}': {ex.Message}");
+                            }
                         }
                     }
                     finally
@@ -287,7 +345,7 @@ namespace GliderView.API
         /// </summary>
         /// <param name="includes"></param>
         /// <returns></returns>
-        private List<string> ParseIncludeList(string includes)
+        private IEnumerable<string> ParseIncludeList(string includes)
         {
             List<string> includeList = includes.Split(",")
                 .Select(x => x.ToLower())
@@ -297,9 +355,17 @@ namespace GliderView.API
             if (includeList.Any(x => !_handlers.ContainsKey(x)))
                 throw new ArgumentException($"Invalid item '{includeList.FirstOrDefault(x => !_handlers.ContainsKey(x))}' in includes list.");
 
-            return includeList;
+            // Arrange in the order the handlers were added to enable subsequent includes which depend on prior ones.
+            return includeList.OrderBy(x => _handlerIds.IndexOf(x))
+                .ToList();
         }
 
+        /// <summary>
+        /// Returns true if the provided property is found in the provided list of includes.
+        /// </summary>
+        /// <param name="includes"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
         public bool ContainsProperty(string includes, string propertyName)
         {
             if (string.IsNullOrEmpty(includes))
@@ -309,5 +375,11 @@ namespace GliderView.API
                 .Contains(propertyName, StringComparer.OrdinalIgnoreCase);
         }
 
+        private int GetParallelism(IEnumerable<string> includes, int maxParallism)
+        {
+            if (includes.Any(x => _handlers[x].RequireSyncronous))
+                return 1;
+            else return maxParallism;
+        }
     }
 }

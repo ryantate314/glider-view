@@ -163,6 +163,45 @@
                         </td>
                     </ng-container>
 
+                    <!-- Cost Column -->
+                    <ng-container matColumnDef="cost">
+                        <th mat-header-cell *matHeaderCellDef> Est. Cost </th>
+                        <td mat-cell *matCellDef="let flight">
+                            <span class="flight-cost"
+                                [ngbPopover]="costBreakdown"
+                                popoverTitle="Estimated Cost Breakdown"
+                                triggers="mouseenter:mouseleave"
+                            >
+                                {{ flight.cost?.total | currency }}
+                        </span>
+                            <ng-template #costBreakdown>
+                                <table class="price-breakdown">
+                                    <tr *ngFor="let lineItem of flight.cost.lineItems">
+                                        <td>{{ lineItem.description }}</td>
+                                        <td>{{ lineItem.quantity != null ? lineItem.quantity : "" }}</td>
+                                        <td>{{ lineItem.unitCost != null ? "@" : "" }}</td>
+                                        <td>
+                                            <span *ngIf="lineItem.unitCost != null">
+                                                {{ lineItem.unitCost | currency }}
+                                                <span *ngIf="lineItem.units != null">
+                                                    / {{ lineItem.units }}
+                                                </span>
+                                            </span>
+                                        </td>
+                                        <td>{{ lineItem.totalCost | currency }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3">&nbsp;</td>
+                                        <td>Total:</td>
+                                        <td>{{ flight.cost.total | currency }}</td>
+                                    </tr>
+                                </table>
+                                <small>*This tow height is only an estimate.</small>
+                            </ng-template>
+                        </td>
+                        
+                    </ng-container>
+
                     <!-- Actions Column -->
                     <ng-container matColumnDef="actions">
                         <th mat-header-cell *matHeaderCellDef> &nbsp; </th>

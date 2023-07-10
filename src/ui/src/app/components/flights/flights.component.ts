@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, distinctUntilChanged, filter, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, distinctUntilChanged, filter, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, throwError, withLatestFrom } from 'rxjs';
 import { Aircraft, Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -12,8 +12,6 @@ import * as dayjs from 'dayjs';
 import { SettingsService } from 'src/app/services/settings.service';
 import { Scopes, User } from 'src/app/models/user.model';
 import { AuthService } from 'src/app/services/auth.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableDataSource } from '@angular/material/table';
 import { MatSort, Sort } from '@angular/material/sort';
 import { DisplayMode } from 'src/app/models/display-mode';
 import { TitleService } from 'src/app/services/title.service';
@@ -39,6 +37,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   /** An array of all flights in the current week. This prevents making an API call when changing dates with in the same week. */
   private allFlights$: Observable<Flight[]>;
   public date$: Observable<dayjs.Dayjs>;
+  /** Sorted list of flights on the selected date. */
   public flights$: Observable<Flight[]>;
   public weekDays$: Observable<WeekDay[]>;
   public isLoading$ = new BehaviorSubject<boolean>(true);
@@ -47,11 +46,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public canAssignPilots$: Observable<boolean>;
   public canManageFlights$: Observable<boolean>;
 
-
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
 
-  private allColumns = ['time', 'glider', 'releaseHeight', 'duration', 'pilots', 'towplane', 'actions'];
+  private allColumns = ['time', 'glider', 'releaseHeight', 'duration', 'pilots', 'cost', 'towplane', 'actions'];
   public columns$: Observable<string[]>;
 
   public displayMode$ = new ReplaySubject<DisplayMode>(1);
@@ -99,13 +97,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     this.columns$ = this.auth.isAuthenticated$.pipe(
       map(isAuthenticated => isAuthenticated ?
         this.allColumns
-        : this.allColumns.filter(x => x != "pilots")
+        : this.allColumns.filter(x => x != "pilots" && x != "cost")
       )
     );
 
     const includes$ = this.auth.isAuthenticated$.pipe(
       map(isAuthenticated => isAuthenticated ?
-          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS}`
+          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_COST}`
         : FlightService.INCLUDE_STATISTICS
       )
     );
@@ -126,6 +124,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
             .toDate(),
           includes)
       ),
+      catchError((err) => {
+        this.isLoading$.next(false);
+
+        this.router.navigate(['/error']);
+      
+        return throwError(() => err);
+      }),
       tap(_ => {
         this.isLoading$.next(false);
       }),
@@ -139,6 +144,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       map(([flights, date]) => flights.filter(x =>
         dayjs(date).isSame(x.startDate, 'day')))
     );
+
 
     this.flights$ = combineLatest([
       flightsOnDate$,
@@ -181,7 +187,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
               },
               towFlight: flight,
               waypoints: null,
-              occupants: null
+              occupants: null,
+              cost: null
             }
           );
       })

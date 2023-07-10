@@ -12,9 +12,9 @@ namespace GliderView.UnitTests
         private IgcService _service;
         private Mock<IFlightRepository> _mockFlightRepository;
         private Mock<ILogger<IgcService>> _mockLogger;
-        private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
+        //private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
         private Mock<IFlightBookClient> _mockFlightBookClient;
-
+        private Mock<IOgnDeviceDatabaseProvider> _mockOgnDatabase;
         private MockFileSystem _fileSystem;
 
         const string directory = @"\igc-files";
@@ -24,8 +24,9 @@ namespace GliderView.UnitTests
         {
             _mockFlightRepository= new Mock<IFlightRepository>();
             _mockLogger = new Mock<ILogger<IgcService>>();
-            _mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
+            //_mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
             _mockFlightBookClient= new Mock<IFlightBookClient>();
+            _mockOgnDatabase = new Mock<IOgnDeviceDatabaseProvider>();
 
             _fileSystem = new MockFileSystem();
 
@@ -33,7 +34,7 @@ namespace GliderView.UnitTests
                 new IgcFileRepository(directory, new Mock<ILogger<IgcFileRepository>>().Object, _fileSystem),
                 _mockFlightRepository.Object,
                 _mockLogger.Object,
-                _mockFaaDatabaseProvider.Object,
+                _mockOgnDatabase.Object,
                 _mockFlightBookClient.Object,
                 new FlightAnalyzer(new Mock<ILogger<FlightAnalyzer>>().Object)
             );
