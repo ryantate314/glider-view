@@ -21,6 +21,9 @@ namespace GliderView.Data
 
         public async Task<Airfield?> GetAirfield(string faaId)
         {
+            if (faaId == null)
+                return null;
+
             return await _cache.GetOrCreateAsync($"airfield_{faaId}", async (entry) =>
             {
                 Airfield? field = await _GetAirfield(faaId);

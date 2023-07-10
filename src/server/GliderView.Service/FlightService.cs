@@ -127,7 +127,7 @@ namespace GliderView.Service
             });
 
             // Rental
-            if (aircraftRateInfo != null)
+            if (aircraftRateInfo.Result != null)
             {
                 decimal rentalCost = CalculateRentalCost(flight.Duration, aircraftRateInfo.Result, out double rentalDurationHours);
                 pricing.LineItems.Add(new LineItem()
