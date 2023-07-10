@@ -57,30 +57,62 @@
                 </table>
             </div>
             <div *ngIf="user$ | async as user; else notLoggedIn" class="col-md col-lg-4 offset-lg-2 mb-3">
-                <div class="d-flex align-items-center border-bottom mb-4">
-                    <h4>Pilots</h4>
-                    <button mat-icon-button [matMenuTriggerFor]="menu" style="margin-left: auto;">
-                        <mat-icon>more_vert</mat-icon>
-                    </button>
-                    <mat-menu #menu="matMenu">
-                        <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="!isUserOnFlight(flight, user)">Add to My Logbook</button>
-                        <button mat-menu-item (click)="removePilot(flight.flightId!, user!.userId)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
-                        <button mat-menu-item (click)="assignPilots(flight)" *ngIf="canAssignPilots$ | async">Assign Pilots</button>
-                    </mat-menu>
+                <!-- Pilots -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center border-bottom mb-2">
+                        <h4>Pilots</h4>
+                        <button mat-icon-button [matMenuTriggerFor]="menu" style="margin-left: auto;">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #menu="matMenu">
+                            <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="!isUserOnFlight(flight, user)">Add to My Logbook</button>
+                            <button mat-menu-item (click)="removePilot(flight.flightId!, user!.userId)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
+                            <button mat-menu-item (click)="assignPilots(flight)" *ngIf="canAssignPilots$ | async">Assign Pilots</button>
+                        </mat-menu>
+                    </div>
+                    <p *ngIf="flight.occupants?.length == 0">No one has claimed this flight yet.</p> 
+                    <table>
+                        <tbody>
+                            <tr *ngFor="let occupant of flight.occupants">
+                                <td class="pe-4 pt-1 pb-1">{{ occupant.name }}</td>
+                                <td class="pt-1 pb-1">
+                                    <button mat-icon-button class="small-icon-button" *ngIf="canAssignPilots$ | async" title="Remove from Flight" (click)="removePilot(flight.flightId!, occupant.userId!)">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <p *ngIf="flight.occupants?.length == 0">No one has claimed this flight yet.</p> 
-                <table>
-                    <tbody>
-                        <tr *ngFor="let occupant of flight.occupants">
-                            <td class="pe-4 pt-1 pb-1">{{ occupant.name }}</td>
-                            <td class="pt-1 pb-1">
-                                <button mat-icon-button class="small-icon-button" *ngIf="canAssignPilots$ | async" title="Remove from Flight" (click)="removePilot(flight.flightId!, occupant.userId!)">
-                                    <mat-icon>delete</mat-icon>
-                                </button>
+                
+                <!-- Cost Breakdown -->
+                <div *ngIf="flight.cost != null" >
+                    <div class="border-bottom">
+                        <h4>Estimated Cost Breakdown</h4>
+                    </div>
+                    <table class="price-breakdown table">
+                        <tr *ngFor="let lineItem of flight.cost.lineItems">
+                            <td>{{ lineItem.description }}</td>
+                            <td>{{ lineItem.quantity != null ? lineItem.quantity : "" }}</td>
+                            <td>{{ lineItem.unitCost != null ? "@" : "" }}</td>
+                            <td>
+                                <span *ngIf="lineItem.unitCost != null">
+                                    {{ lineItem.unitCost | currency }}
+                                    <span *ngIf="lineItem.units != null">
+                                        / {{ lineItem.units }}
+                                    </span>
+                                </span>
                             </td>
+                            <td>{{ lineItem.totalCost | currency }}</td>
                         </tr>
-                    </tbody>
-                </table>
+                        <tr>
+                            <td colspan="3">&nbsp;</td>
+                            <td>Total:</td>
+                            <td>{{ flight.cost.total | currency }}</td>
+                        </tr>
+                    </table>
+                    <small>*This tow height is only an estimate.</small>
+                </div>
             </div>
             
         </div><!-- /.row -->

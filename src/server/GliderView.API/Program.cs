@@ -71,6 +71,8 @@ namespace GliderView.API
 
             services.AddHttpClient();
 
+            services.AddMemoryCache();
+
             services.AddTransient<IIgcFileRepository>(services =>
                 new IgcFileRepository(
                     config["igcDirectory"]!,

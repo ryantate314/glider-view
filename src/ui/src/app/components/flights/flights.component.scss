@@ -46,7 +46,7 @@
 .table-container {
     overflow-x: auto;
 
-    table {
+    & > table {
         min-width: 700px;
     }
     
@@ -71,9 +71,41 @@ table {
             font-weight: bolder;
         }
     }
+
+    td {
+        .flight-cost {
+            text-decoration: underline dotted;
+        }
+    }
 }
 
 .mat-datepicker-toggle {
     /* Remove the transparency added by default */
     color: inherit;
+}
+
+table.price-breakdown {
+    
+
+    tr {
+        td {
+            // Undo bolding when the current user is on a flight
+            font-weight: normal;
+        }
+
+        td:first-child {
+            text-overflow: ellipsis;
+            word-wrap: nowrap;
+        }
+
+        td:last-child {
+            padding-left: 0.5em;
+        }
+    }
+
+    tr:last-child {
+        td {
+            border-top: 1px solid lightgray;
+        }
+    }
 }

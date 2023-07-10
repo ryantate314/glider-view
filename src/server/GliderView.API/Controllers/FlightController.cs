@@ -12,6 +12,7 @@ namespace GliderView.API.Controllers
         private const string INCLUDE_WAYPOINTS = "waypoints";
         private const string INCLUDE_STATISTICS = "statistics";
         private const string INCLUDE_PILOTS = "occupants";
+        private const string INCLUDE_COST = "cost";
 
         [Obsolete]
         private readonly IFlightRepository _flightRepo;
@@ -40,7 +41,8 @@ namespace GliderView.API.Controllers
                 {
                     config.SingleUpdateFunction = async flight =>
                         flight.Waypoints = await _flightRepo.GetWaypoints(flight.FlightId);
-                    config.MultipleUpdateFunction = flights => throw new InvalidOperationException("Retrieving waypoints for multiple flights is not supported.");
+                    config.MultipleUpdateFunction = flights =>
+                        throw new InvalidOperationException("Retrieving waypoints for multiple flights is not supported.");
                 })
                 .AddHandler(x => x.Statistics, config =>
                 {
@@ -69,6 +71,22 @@ namespace GliderView.API.Controllers
                                 flight.Occupants = pilots[flight.FlightId]
                                     .ToList();
                     };
+                })
+                .AddHandler(x => x.Cost, config =>
+                {
+                    config.FailOnError = false;
+                    config.RequireSyncronous = true;
+
+                    config.SingleUpdateFunction = async flight =>
+                        flight.Cost = await _flightService.CalculateCost(flight);
+
+                    config.MultipleUpdateFunction = async flights =>
+                    {
+                        foreach (Flight flight in flights)
+                        {
+                            flight.Cost = await _flightService.CalculateCost(flight);
+                        }
+                    };
                 });
         }
 
@@ -80,6 +98,9 @@ namespace GliderView.API.Controllers
 
             if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(search.Includes, INCLUDE_PILOTS))
                 return Unauthorized("You must be logged in to see a list of pilots.");
+
+            if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(search.Includes, INCLUDE_COST))
+                return Unauthorized("You must be logged in to see flight costs.");
 
             List<Flight> flights = await _flightRepo.GetFlights(search);
 
@@ -96,6 +117,9 @@ namespace GliderView.API.Controllers
 
             if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(includes, INCLUDE_PILOTS))
                 return Unauthorized("You must be logged in to see a list of pilots.");
+
+            if (!User.Identity.IsAuthenticated && _includeHandler.ContainsProperty(includes, INCLUDE_COST))
+                return Unauthorized("You must be logged in to see flight costs.");
 
             Flight? flight = await _flightRepo.GetFlight(flightId);
 

@@ -8,12 +8,14 @@ export interface Flight {
     duration: number | null;
     igcFileName: string | null;
     contestId: string | null;
+    airfieldId: string | null;
     
     aircraft: Aircraft | null;
     towFlight: Flight | null;
     statistics: Statistics | null;
     waypoints: Waypoint[] | null;
     occupants: Occupant[] | null;
+    cost: PricingInfo | null;
 }
 
 export interface Aircraft {
@@ -62,4 +64,17 @@ export interface Occupant {
     flightNumber: number | null;
     notes: string | null;
     userId: string | null;
+}
+
+export interface PricingInfo {
+    total: number;
+    lineItems: LineItem[];
+}
+
+export interface LineItem {
+    description: string;
+    unitCost: number | null;
+    units: string | null;
+    quantity: number | null;
+    totalCost: number;
 }

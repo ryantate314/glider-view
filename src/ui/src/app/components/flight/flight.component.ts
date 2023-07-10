@@ -118,7 +118,7 @@ export class FlightComponent implements OnInit, AfterViewInit {
 
     const includes$ = this.auth.isAuthenticated$.pipe(
       map(isAuthenticated => isAuthenticated ?
-          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_WAYPOINTS}`
+          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_WAYPOINTS},${FlightService.INCLUDE_COST}`
         :  `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_WAYPOINTS}`
       )
     );

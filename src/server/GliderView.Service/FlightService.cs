@@ -13,11 +13,15 @@ namespace GliderView.Service
     {
         private readonly IFlightRepository _repo;
         private readonly FlightAnalyzer _analyzer;
+        private readonly IRateRepo _rateRepo;
+        private readonly IAirfieldRepo _fieldRepo;
 
-        public FlightService(IFlightRepository repo, FlightAnalyzer analyzer)
+        public FlightService(IFlightRepository repo, FlightAnalyzer analyzer, IRateRepo rateRepo, IAirfieldRepo fieldRepo)
         {
             _repo = repo;
             _analyzer = analyzer;
+            _rateRepo = rateRepo;
+            _fieldRepo = fieldRepo;
         }
 
         public async Task AddPilot(Guid flightId, Guid pilotId)
@@ -77,6 +81,91 @@ namespace GliderView.Service
         public Task DeleteFlight(Guid flightId)
         {
             return _repo.DeleteFlight(flightId);
+        }
+
+        public async Task<PricingInfo?> CalculateCost(Flight flight)
+        {
+            if (flight.Aircraft == null)
+                throw new ArgumentException("Cannot calculate rate for flight without aircraft.");
+            if (flight.AirfieldId == null)
+                throw new ArgumentException("Cannot calculate rate for flight without an airfield.");
+            if (flight.Statistics?.ReleaseHeight == null)
+                throw new ArgumentException("Cannot calculate rate for flight without release height.");
+
+            Task<Rates?> baseRateInfo = _rateRepo.GetRates();
+            Task<AircraftRates?> aircraftRateInfo = _rateRepo.GetAircraftRates(flight.Aircraft.AircraftId);
+            Task<Airfield?> field = _fieldRepo.GetAirfield(flight.AirfieldId);
+
+            await Task.WhenAll(baseRateInfo, aircraftRateInfo, field);
+
+            if (baseRateInfo.Result == null)
+                throw new InvalidOperationException("No rate information found.");
+            if (field.Result == null)
+                throw new InvalidOperationException("No field information found.");
+
+            var pricing = new PricingInfo();
+
+            // Tow
+            pricing.LineItems.Add(new LineItem()
+            {
+                Description = "Hook Up",
+                TotalCost = baseRateInfo.Result.HookupCost,
+            });
+
+            int releaseHeight = GetReleaseHeightInHundredsOfFeetAgl(flight.Statistics.ReleaseHeight.Value, field.Result.ElevationMeters);
+            int minReleaseHeight = baseRateInfo.Result.MinTowHeight / 100;
+
+            releaseHeight = Math.Max(releaseHeight, minReleaseHeight);
+
+            pricing.LineItems.Add(new LineItem()
+            {
+                Description = "Tow",
+                UnitCost = baseRateInfo.Result.CostPerHundredFeet,
+                Units = "100ft",
+                Quantity = releaseHeight,
+                TotalCost = baseRateInfo.Result.CostPerHundredFeet * releaseHeight
+            });
+
+            // Rental
+            if (aircraftRateInfo != null)
+            {
+                decimal rentalCost = CalculateRentalCost(flight.Duration, aircraftRateInfo.Result, out double rentalDurationHours);
+                pricing.LineItems.Add(new LineItem()
+                {
+                    Description = "Rental",
+                    UnitCost = aircraftRateInfo.Result.RentalCostPerHour,
+                    Units = "hr",
+                    Quantity = (float)Math.Round(rentalDurationHours, 2),
+                    TotalCost = rentalCost
+                });
+            }
+
+            pricing.Total = pricing.LineItems.Sum(x => x.TotalCost);
+
+            return pricing;
+        }
+
+        private decimal CalculateRentalCost(int flightDurationSeconds, AircraftRates rates, out double rentalDurationHours)
+        {
+            int rentalDurationSeconds = (int)Math.Max(
+                flightDurationSeconds,
+                rates.MinRentalHours * 60 * 60
+            );
+
+            // Round to the nearest minute
+            rentalDurationHours = Math.Round(rentalDurationSeconds / 60.0) / 60.0;
+
+            // Round to the nearest dollar
+            return Math.Round((decimal)rentalDurationHours * rates.RentalCostPerHour);
+        }
+
+        private int GetReleaseHeightInHundredsOfFeetAgl(int releaseHeightMeters, int fieldElevationMeters)
+        {
+            int aglMeters = releaseHeightMeters - fieldElevationMeters;
+
+            int hundresOfFeet = (int)Math.Round(UnitUtils.MetersToFeet(aglMeters) / 100.0);
+
+            return hundresOfFeet;
         }
     }
 }
