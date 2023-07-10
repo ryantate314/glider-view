@@ -173,9 +173,9 @@
                                 triggers="mouseenter:mouseleave"
                             >
                                 {{ flight.cost?.total | currency }}
-                        </span>
+                            </span>
                             <ng-template #costBreakdown>
-                                <table class="price-breakdown">
+                                <table class="price-breakdown" *ngIf="flight.cost != null">
                                     <tr *ngFor="let lineItem of flight.cost.lineItems">
                                         <td>{{ lineItem.description }}</td>
                                         <td>{{ lineItem.quantity != null ? lineItem.quantity : "" }}</td>
@@ -253,7 +253,7 @@
         <ng-container *ngIf="flight.flightId">
             <ng-container *ngIf="user$ | async as user">
                 <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="!isUserOnFlight(flight, user)">Add to My Logbook</button>
-                <button mat-menu-item (click)="addToLogbook(flight, user)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
+                <button mat-menu-item (click)="removeFromLogbook(flight, user)" *ngIf="isUserOnFlight(flight, user)">Remove From My Logbook</button>
                 <button mat-menu-item (click)="assignPilots(flight)" *ngIf="canAssignPilots$ | async">Assign Pilots</button>
                 <button mat-menu-item (click)="downloadIgc(flight)" *ngIf="flight.igcFileName">Download IGC File</button>
             </ng-container>

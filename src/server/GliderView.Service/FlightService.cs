@@ -135,7 +135,7 @@ namespace GliderView.Service
                     Description = "Rental",
                     UnitCost = aircraftRateInfo.Result.RentalCostPerHour,
                     Units = "hr",
-                    Quantity = (float)Math.Round(rentalDurationHours, 1),
+                    Quantity = (float)Math.Round(rentalDurationHours, 2),
                     TotalCost = rentalCost
                 });
             }
@@ -149,10 +149,14 @@ namespace GliderView.Service
         {
             int rentalDurationSeconds = (int)Math.Max(
                 flightDurationSeconds,
-                TimeSpan.FromHours(rates.MinRentalHours).TotalSeconds
+                rates.MinRentalHours * 60 * 60
             );
-            rentalDurationHours = Math.Round(rentalDurationSeconds / 60.0 / 60.0, 1);
-            return (decimal)rentalDurationHours * rates.RentalCostPerHour;
+
+            // Round to the nearest minute
+            rentalDurationHours = Math.Round(rentalDurationSeconds / 60.0) / 60.0;
+
+            // Round to the nearest dollar
+            return Math.Round((decimal)rentalDurationHours * rates.RentalCostPerHour);
         }
 
         private int GetReleaseHeightInHundredsOfFeetAgl(int releaseHeightMeters, int fieldElevationMeters)

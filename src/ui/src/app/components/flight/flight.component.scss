@@ -19,3 +19,22 @@
        font-size: 16px !important;
     }
  }
+
+ table.price-breakdown {
+   tr {
+       td:first-child {
+           text-overflow: ellipsis;
+           word-wrap: nowrap;
+       }
+
+       td:last-child {
+           padding-left: 0.5em;
+       }
+   }
+
+   tr:last-child {
+       td {
+           border-top: 1px solid lightgray;
+       }
+   }
+}

@@ -84,8 +84,15 @@ table {
     color: inherit;
 }
 
-table .price-breakdown {
+table.price-breakdown {
+    
+
     tr {
+        td {
+            // Undo bolding when the current user is on a flight
+            font-weight: normal;
+        }
+
         td:first-child {
             text-overflow: ellipsis;
             word-wrap: nowrap;

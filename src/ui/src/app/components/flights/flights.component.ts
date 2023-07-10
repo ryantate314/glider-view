@@ -177,6 +177,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
               endDate: null,
               igcFileName: null,
               contestId: null,
+              airfieldId: null,
               statistics: {
                 releaseHeight: flight.statistics?.maxAltitude ?? null,
                 altitudeGained: null,
@@ -361,6 +362,16 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public addToLogbook(flight: Flight, user: User) {
     this.flightService.addPilot(flight.flightId!, user.userId).subscribe(() => {
       this.admiralSnackbar.open("Flight added to your logbook.", "Close");
+
+      this.refreshFlights$.next(null);
+    });
+  }
+
+  public removeFromLogbook(flight: Flight, user: User) {
+    const newPilots = flight.occupants!.filter(x => x.userId != user.userId);
+
+    this.flightService.updatePilots(flight.flightId!, newPilots).subscribe(() => {
+      this.admiralSnackbar.open("Flight removed from your logbook.", "Close");
 
       this.refreshFlights$.next(null);
     });
