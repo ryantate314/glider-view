@@ -145,8 +145,15 @@
 
                     <!-- Release Height Column -->
                     <ng-container matColumnDef="releaseHeight">
-                        <th mat-header-cell *matHeaderCellDef> Release Height (MSL) </th>
-                        <td mat-cell *matCellDef="let flight"> {{ flight.statistics?.releaseHeight !== null ? mToFt(flight.statistics?.releaseHeight)  + "ft" : "Unknown" }} </td>
+                        <th mat-header-cell *matHeaderCellDef> Release Height (AGL) </th>
+                        <td mat-cell *matCellDef="let flight">
+                            <span *ngIf="flight.statistics?.releaseHeight != null">
+                                {{ mToFt(flight.statistics?.releaseHeight)  + "ft" }} ({{ getAglReleaseHeight(flight) | async }}ft)
+                            </span>
+                            <span *nfIf="flight.statistics?.releaseHeight == null">
+                                Unknown
+                            </span>
+                        </td>
                     </ng-container>
 
                     <!-- Pilots Column -->

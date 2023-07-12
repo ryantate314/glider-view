@@ -18,6 +18,8 @@ import { TitleService } from 'src/app/services/title.service';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
 import { SnackbarService } from 'src/app/services/snackbar.service';
+import { AirfieldService } from 'src/app/services/airfield.service';
+import { Airfields } from 'src/app/models/airfield.model';
 
 interface WeekDay {
   abbreviation: string;
@@ -64,7 +66,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     private settings: SettingsService,
     private auth: AuthService,
     private admiralSnackbar: SnackbarService,
-    private title: TitleService
+    private title: TitleService,
+    private fieldService: AirfieldService
   ) {
 
     this.user$ = this.auth.user$;
@@ -177,7 +180,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
               endDate: null,
               igcFileName: null,
               contestId: null,
-              airfieldId: null,
+              airfieldId: Airfields.Chilhowee,
               statistics: {
                 releaseHeight: flight.statistics?.maxAltitude ?? null,
                 altitudeGained: null,
@@ -423,7 +426,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     const element = event.currentTarget as HTMLInputElement;
     this.flightService.uploadFlight(
       element.files![0],
-      "92A"
+      Airfields.Chilhowee
     ).subscribe({
       next: (flight) => {
         this.router.navigate(["flights", flight.flightId]);
@@ -443,5 +446,18 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       return aircraftDescription;
     
     return `${aircraftDescription} (${flight.contestId ?? flight.aircraft?.registrationId ?? "NOID"})`;
+  }
+
+  public getAglReleaseHeight(flight: Flight) {
+    if (flight.airfieldId == null)
+      return of(0);
+
+    return this.fieldService.getField(flight.airfieldId)
+      .pipe(
+        filter(field => field != null),
+        map(field => this.mToFt(
+          flight.statistics!.releaseHeight! - field!.elevationMeters
+        ))
+      )
   }
 }

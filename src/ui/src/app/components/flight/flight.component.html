@@ -47,7 +47,12 @@
                         </tr>
                         <tr>
                             <td>Release Height:</td>
-                            <td>{{ flight.statistics.releaseHeight !== null ? mToFt(flight.statistics!.releaseHeight) + "ft MSL" : "Unknown" }}</td>
+                            <td>
+                                <span *ngIf="flight.statistics?.releaseHeight !== null">
+                                    {{ mToFt(flight.statistics!.releaseHeight) }}ft ({{ releaseHeightAgl$ | async }}ft AGL)
+                                </span>
+                                <span *ngIf="flight.statistics?.releaseHeight === null">Unknown</span>
+                            </td>
                         </tr>
                         <tr>
                             <td>Pattern Entry Altitude</td>

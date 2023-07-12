@@ -50,7 +50,7 @@
                         <td>{{ mToFt(entry.flight.statistics?.releaseHeight) }}</td>
                         <td>{{ mToFt(entry.flight.statistics?.maxAltitude) }}</td>
 
-                        <td title="Chilhowee Gliderport">92A</td>
+                        <td> {{ entry.flight.airfieldId }}</td>
 
                         <!-- Hobbs Time -->
                         <td>{{ getHobsTime(entry.flight.duration).hours }}</td>

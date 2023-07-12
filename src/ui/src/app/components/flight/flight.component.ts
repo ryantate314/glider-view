@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, filter, iif, map, merge, Observable, of, shareReplay, startWith, Subject, switchMap, take, throwError, withLatestFrom } from 'rxjs';
+import { combineLatest, distinctUntilChanged, filter, iif, map, merge, Observable, of, shareReplay, startWith, Subject, switchMap, take, throwError, withLatestFrom } from 'rxjs';
 import { Flight, FlightEventType, Occupant, Waypoint } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as leaflet from 'leaflet';
@@ -15,6 +15,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-modal.component';
 import * as FileSaver from 'file-saver';
 import { SnackbarService } from 'src/app/services/snackbar.service';
+import { AirfieldService } from 'src/app/services/airfield.service';
+import { Airfield } from 'src/app/models/airfield.model';
 
 const baseChartOptions: ChartOptions<'line'> = {
   plugins: {
@@ -90,6 +92,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
   private altitudeChartOptions$: Observable<ChartOptions<'line'>>;
   private updateStatistics$ = new Subject<void>();
   private refreshFlight$ = new Subject<void>();
+  airfield$: Observable<Airfield | null>;
+  releaseHeightAgl$: Observable<number>;
 
   constructor(
     private flightService: FlightService,
@@ -98,7 +102,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
     private title: TitleService,
     private dialog: MatDialog,
     private snackbar: SnackbarService,
-    private router: Router
+    private router: Router,
+    private fieldService: AirfieldService
   ) {
 
     this.user$ = this.auth.user$.pipe(
@@ -138,6 +143,22 @@ export class FlightComponent implements OnInit, AfterViewInit {
       ),
       shareReplay(1)
     );
+
+    this.airfield$ = this.flight$.pipe(
+      map(flight => flight.airfieldId),
+      filter(x => x != null),
+      distinctUntilChanged(),
+      switchMap(airfield => this.fieldService.getField(airfield!)),
+      shareReplay(1)
+    );
+
+    this.releaseHeightAgl$ = combineLatest([
+      this.flight$,
+      this.airfield$
+    ]).pipe(
+      filter(([flight, field]) => flight.statistics?.releaseHeight != null && field != null),
+      map(([flight, field]) => this.mToFt(flight.statistics!.releaseHeight! - field!.elevationMeters)!)
+    )
 
     this.userOnFlight$ = combineLatest([
       this.user$,
