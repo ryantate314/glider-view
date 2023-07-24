@@ -86,7 +86,17 @@ namespace GliderView.API.Controllers
                     {
                         foreach (Flight flight in flights)
                         {
-                            flight.Cost = await _flightService.CalculateCost(flight);
+                            try
+                            {
+                                flight.Cost = await _flightService.CalculateCost(flight);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (ex is ArgumentException || ex is InvalidOperationException)
+                                    _logger.LogDebug("Error calculating cost for flight {0}: {1}", flight.FlightId, ex.Message);
+                                else
+                                    throw;
+                            }
                         }
                     };
                 });
