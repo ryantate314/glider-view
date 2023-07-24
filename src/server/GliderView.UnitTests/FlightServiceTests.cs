@@ -19,6 +19,7 @@ namespace GliderView.UnitTests
         private Mock<IFlightRepository> _fakeFlightRepo;
         private Mock<IRateRepo> _fakeRateRepo;
         private Mock<IAirfieldRepo> _fakeAirfieldRepo;
+        private Mock<ILogger<FlightService>> _fakeLogger;
         private FlightService _flightService;
 
         [SetUp]
@@ -27,6 +28,7 @@ namespace GliderView.UnitTests
             _fakeFlightRepo = new Mock<IFlightRepository>();
             _fakeRateRepo = new Mock<IRateRepo>();
             _fakeAirfieldRepo = new Mock<IAirfieldRepo>();
+            _fakeLogger = new Mock<ILogger<FlightService>>();
 
             _flightService = new FlightService(
                 _fakeFlightRepo.Object,
@@ -34,7 +36,8 @@ namespace GliderView.UnitTests
                     new Mock<ILogger<FlightAnalyzer>>().Object
                 ),
                 _fakeRateRepo.Object,
-                _fakeAirfieldRepo.Object
+                _fakeAirfieldRepo.Object,
+                _fakeLogger.Object
             );
         }
 

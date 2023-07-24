@@ -20,6 +20,7 @@ import { AssignPilotModalComponent } from '../assign-pilot-modal/assign-pilot-mo
 import { SnackbarService } from 'src/app/services/snackbar.service';
 import { AirfieldService } from 'src/app/services/airfield.service';
 import { Airfields } from 'src/app/models/airfield.model';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 
 interface WeekDay {
   abbreviation: string;
@@ -431,8 +432,13 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       next: (flight) => {
         this.router.navigate(["flights", flight.flightId]);
       },
-      error: () => {
-        this.admiralSnackbar.openError("Error adding flight. Please try again.");
+      error: (err: HttpErrorResponse) => {
+
+        if (err.status == HttpStatusCode.Conflict)
+          this.admiralSnackbar.openError("The provided flight already exists.");
+        else
+          this.admiralSnackbar.openError("Error adding flight. Please try again.");
+
         // Reset the input so the user can upload the same file again
         element.value = "";
       }

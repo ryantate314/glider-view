@@ -2,6 +2,7 @@
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +14,12 @@ namespace GliderView.Data
     public class AirfieldRepo : SqlRepository, IAirfieldRepo
     {
         private readonly IMemoryCache _cache;
+        private readonly ILogger<AirfieldRepo> _logger;
 
-        public AirfieldRepo(string connectionString, IMemoryCache airfieldCache) : base(connectionString)
+        public AirfieldRepo(string connectionString, IMemoryCache airfieldCache, ILogger<AirfieldRepo> logger) : base(connectionString)
         {
             _cache = airfieldCache;
+            _logger = logger;
         }
 
         public async Task<Airfield?> GetAirfield(string faaId)
@@ -26,6 +29,8 @@ namespace GliderView.Data
 
             return await _cache.GetOrCreateAsync($"airfield_{faaId}", async (entry) =>
             {
+                _logger.LogDebug("Cache miss for airfield {0}", faaId);
+
                 Airfield? field = await _GetAirfield(faaId);
 
                 if (field == null)

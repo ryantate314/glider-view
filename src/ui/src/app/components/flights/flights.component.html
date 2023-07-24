@@ -150,7 +150,7 @@
                             <span *ngIf="flight.statistics?.releaseHeight != null">
                                 {{ mToFt(flight.statistics?.releaseHeight)  + "ft" }} ({{ getAglReleaseHeight(flight) | async }}ft)
                             </span>
-                            <span *nfIf="flight.statistics?.releaseHeight == null">
+                            <span *ngIf="flight.statistics?.releaseHeight == null">
                                 Unknown
                             </span>
                         </td>

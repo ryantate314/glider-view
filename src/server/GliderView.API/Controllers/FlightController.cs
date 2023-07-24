@@ -50,6 +50,8 @@ namespace GliderView.API.Controllers
                         flight.Statistics = await _flightRepo.GetStatistics(flight.FlightId);
                     config.MultipleUpdateFunction = async flights =>
                     {
+                        _logger.LogDebug("Loading flight statistics for {0} flight(s).", flights.Count);
+
                         var stats = await _flightRepo.GetStatistics(flights.Select(x => x.FlightId));
 
                         foreach (var flight in flights)
@@ -84,7 +86,17 @@ namespace GliderView.API.Controllers
                     {
                         foreach (Flight flight in flights)
                         {
-                            flight.Cost = await _flightService.CalculateCost(flight);
+                            try
+                            {
+                                flight.Cost = await _flightService.CalculateCost(flight);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (ex is ArgumentException || ex is InvalidOperationException)
+                                    _logger.LogDebug("Error calculating cost for flight {0}: {1}", flight.FlightId, ex.Message);
+                                else
+                                    throw;
+                            }
                         }
                     };
                 });

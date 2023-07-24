@@ -33,14 +33,16 @@ namespace GliderView.Data
             services.AddTransient<IRateRepo, RateRepo>(services =>
                 new RateRepo(
                     connectionString,
-                    services.GetRequiredService<IMemoryCache>()
+                    services.GetRequiredService<IMemoryCache>(),
+                    services.GetRequiredService<ILogger<RateRepo>>()
                 )
             );
 
             services.AddTransient<IAirfieldRepo, AirfieldRepo>(services =>
                 new AirfieldRepo(
                     connectionString,
-                    services.GetRequiredService<IMemoryCache>()
+                    services.GetRequiredService<IMemoryCache>(),
+                    services.GetRequiredService<ILogger<AirfieldRepo>>()
                 )
             );
         }

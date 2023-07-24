@@ -1,5 +1,6 @@
 using GliderView.Service;
 using GliderView.Service.Models;
+using GliderView.Service.Repositories;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.IO.Abstractions;
@@ -11,10 +12,11 @@ namespace GliderView.UnitTests
     {
         private IgcService _service;
         private Mock<IFlightRepository> _mockFlightRepository;
-        private Mock<ILogger<IgcService>> _mockLogger;
+        private Mock<ILogger<IgcService>> _mockIgcLogger;
         //private Mock<IFaaDatabaseProvider> _mockFaaDatabaseProvider;
         private Mock<IFlightBookClient> _mockFlightBookClient;
         private Mock<IOgnDeviceDatabaseProvider> _mockOgnDatabase;
+        private Mock<IAirfieldRepo> _mockFieldRepo;
         private MockFileSystem _fileSystem;
 
         const string directory = @"\igc-files";
@@ -23,20 +25,22 @@ namespace GliderView.UnitTests
         public void Setup()
         {
             _mockFlightRepository= new Mock<IFlightRepository>();
-            _mockLogger = new Mock<ILogger<IgcService>>();
+            _mockIgcLogger = new Mock<ILogger<IgcService>>();
             //_mockFaaDatabaseProvider= new Mock<IFaaDatabaseProvider>();
             _mockFlightBookClient= new Mock<IFlightBookClient>();
             _mockOgnDatabase = new Mock<IOgnDeviceDatabaseProvider>();
+            _mockFieldRepo = new Mock<IAirfieldRepo>();
 
             _fileSystem = new MockFileSystem();
 
             _service = new IgcService(
                 new IgcFileRepository(directory, new Mock<ILogger<IgcFileRepository>>().Object, _fileSystem),
                 _mockFlightRepository.Object,
-                _mockLogger.Object,
+                _mockIgcLogger.Object,
                 _mockOgnDatabase.Object,
                 _mockFlightBookClient.Object,
-                new FlightAnalyzer(new Mock<ILogger<FlightAnalyzer>>().Object)
+                new FlightAnalyzer(new Mock<ILogger<FlightAnalyzer>>().Object),
+                _mockFieldRepo.Object
             );
         }
 

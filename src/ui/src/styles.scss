@@ -38,7 +38,8 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 snack-bar-container.error {
-  color: red;
+  color: white;
+  background-color: red;
 }
 
 @include media-breakpoint-up(xl) {
