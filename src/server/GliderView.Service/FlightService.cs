@@ -1,6 +1,7 @@
 ﻿using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +16,15 @@ namespace GliderView.Service
         private readonly FlightAnalyzer _analyzer;
         private readonly IRateRepo _rateRepo;
         private readonly IAirfieldRepo _fieldRepo;
+        private readonly ILogger<FlightService> _logger;
 
-        public FlightService(IFlightRepository repo, FlightAnalyzer analyzer, IRateRepo rateRepo, IAirfieldRepo fieldRepo)
+        public FlightService(IFlightRepository repo, FlightAnalyzer analyzer, IRateRepo rateRepo, IAirfieldRepo fieldRepo, ILogger<FlightService> logger)
         {
             _repo = repo;
             _analyzer = analyzer;
             _rateRepo = rateRepo;
             _fieldRepo = fieldRepo;
+            _logger = logger;
         }
 
         public async Task AddPilot(Guid flightId, Guid pilotId)
@@ -85,6 +88,8 @@ namespace GliderView.Service
 
         public async Task<PricingInfo?> CalculateCost(Flight flight)
         {
+            _logger.LogDebug("Calculating costs for flight {0}", flight.FlightId);
+
             if (flight.Aircraft == null)
                 throw new ArgumentException("Cannot calculate rate for flight without aircraft.");
             if (flight.AirfieldId == null)

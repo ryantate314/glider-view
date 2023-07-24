@@ -2,6 +2,7 @@
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,16 +14,20 @@ namespace GliderView.Data
     public class RateRepo : SqlRepository, IRateRepo
     {
         private readonly IMemoryCache _rateCache;
+        private readonly ILogger<RateRepo> _logger;
 
-        public RateRepo(string connectionString, IMemoryCache rateCache) : base(connectionString)
+        public RateRepo(string connectionString, IMemoryCache rateCache, ILogger<RateRepo> logger) : base(connectionString)
         {
             _rateCache = rateCache;
+            _logger = logger;
         }
 
         public Task<Rates?> GetRates()
         {
             return _rateCache.GetOrCreateAsync("current_rates", async (entry) =>
             {
+                _logger.LogDebug("Cache miss for tow rates");
+
                 Rates? rates = await _GetRates();
 
                 if (rates != null)
@@ -40,6 +45,8 @@ namespace GliderView.Data
         {
             return _rateCache.GetOrCreateAsync($"aircraft_rate_{aircraftId}", async (entry) =>
             {
+                _logger.LogDebug("Cache miss for aircraft rates: {0}", aircraftId);
+
                 AircraftRates? rates = await _GetAircraftRates(aircraftId);
 
                 if (rates != null)

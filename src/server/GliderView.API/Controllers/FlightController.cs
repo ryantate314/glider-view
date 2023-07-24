@@ -50,6 +50,8 @@ namespace GliderView.API.Controllers
                         flight.Statistics = await _flightRepo.GetStatistics(flight.FlightId);
                     config.MultipleUpdateFunction = async flights =>
                     {
+                        _logger.LogDebug("Loading flight statistics for {0} flight(s).", flights.Count);
+
                         var stats = await _flightRepo.GetStatistics(flights.Select(x => x.FlightId));
 
                         foreach (var flight in flights)

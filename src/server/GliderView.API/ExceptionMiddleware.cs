@@ -28,14 +28,14 @@ namespace GliderView.API
                         _logger.LogInformation(ex.Message);
 
                         httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-                        await httpContext.Response.WriteAsync(ex.Message);
+                        await WriteMessage(httpContext.Response, ex.Message);
                         break;
                     }
                     case FlightAlreadyExistsException mappedEx:
                         _logger.LogInformation(ex.Message);
 
                         httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
-                        await httpContext.Response.WriteAsync(ex.Message);
+                        await WriteMessage(httpContext.Response, ex.Message);
                         break;
                     default:
                     {
@@ -46,6 +46,14 @@ namespace GliderView.API
                     }
                 }
             }
+        }
+
+        private Task WriteMessage(HttpResponse response, string message)
+        {
+            return response.WriteAsJsonAsync(new
+            {
+                message
+            });
         }
     }
 
