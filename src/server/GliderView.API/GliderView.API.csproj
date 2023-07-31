@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GliderView.Adapters\GliderView.Adapters.csproj" />
     <ProjectReference Include="..\GliderView.Data\GliderView.Data.csproj" />
     <ProjectReference Include="..\GliderView.Service\GliderView.Service.csproj" />
   </ItemGroup>

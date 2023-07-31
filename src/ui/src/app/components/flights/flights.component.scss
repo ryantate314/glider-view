@@ -109,3 +109,10 @@ table.price-breakdown {
         }
     }
 }
+
+#current-flights {
+    max-width: 100%;
+    overflow-x: auto;
+
+    white-space: nowrap;
+}

@@ -1,4 +1,9 @@
-﻿namespace GliderView.Service
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace GliderView.Service
 {
     public interface IIgcFileRepository
     {

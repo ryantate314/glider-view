@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ namespace GliderView.Service
 
             fileStream.Seek(0, SeekOrigin.Begin);
 
-            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, leaveOpen: true))
+            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, false, 1024, true))
             {
                 string? line;
                 // Keep track of the previous timestamp to detect when the waypoints jump across midnight UTC time

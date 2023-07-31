@@ -35,7 +35,7 @@ namespace GliderView.Data
                         ? DateTime.UtcNow.AddHours(1)
                         : rates.ExpirationDate;
                 else
-                    entry.AbsoluteExpiration = DateTime.UtcNow.AddMinutes(10);
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
 
                 return rates;
             });

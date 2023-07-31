@@ -2,7 +2,8 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Airfield } from '../models/airfield.model';
 import { environment } from 'src/environments/environment';
-import { Observable, catchError, of, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, tap, throwError } from 'rxjs';
+import { AircraftLocationUpdate } from '../models/aircraftLocationUpdate.model';
 
 @Injectable({
   providedIn: 'root'
@@ -29,5 +30,16 @@ export class AirfieldService {
     );
 
     return this.cache[faaId];
+  }
+
+  public getFleet(faaId: string): Observable<AircraftLocationUpdate[]> {
+    return this.http.get<AircraftLocationUpdate[]>(
+      `${environment.apiUrl}/airfields/${encodeURI(faaId)}/fleet`
+    ).pipe(
+      map(aircraft => aircraft.map(x => ({
+        ...x,
+        lastCheckin: new Date(x.lastCheckin)
+      })))
+    );
   }
 }

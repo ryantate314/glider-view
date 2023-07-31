@@ -34,9 +34,9 @@ namespace GliderView.Data
                 Airfield? field = await _GetAirfield(faaId);
 
                 if (field == null)
-                    entry.AbsoluteExpiration = DateTime.UtcNow.AddMinutes(10);
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 else
-                    entry.AbsoluteExpiration = DateTime.UtcNow.AddHours(24);
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
                 return field;
             });
@@ -48,6 +48,8 @@ namespace GliderView.Data
 SELECT
     FaaId
     , ElevationMeters
+    , Latitude
+    , Longitude
 FROM dbo.Airfield
 WHERE FaaId = @faaId;
 ";

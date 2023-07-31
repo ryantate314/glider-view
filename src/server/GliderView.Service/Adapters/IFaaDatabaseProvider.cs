@@ -1,4 +1,7 @@
-﻿namespace GliderView.Service
+﻿using GliderView.Service.Models.FaaDatabase;
+using System.Threading.Tasks;
+
+namespace GliderView.Service.Adapters
 {
     /// <summary>
     /// This class provides a link to the FAA aircraft registration database. It uses a screen scraper
@@ -6,6 +9,6 @@
     /// </summary>
     public interface IFaaDatabaseProvider
     {
-        Task<FaaDatabaseProvider.Aircraft?> Lookup(string nNumber);
+        Task<Aircraft?> Lookup(string nNumber);
     }
 }

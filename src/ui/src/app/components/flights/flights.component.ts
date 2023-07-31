@@ -22,6 +22,7 @@ import { AirfieldService } from 'src/app/services/airfield.service';
 import { Airfields } from 'src/app/models/airfield.model';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { PasswordModalComponent } from '../password-modal/password-modal.component';
+import { AircraftLocationUpdate } from 'src/app/models/aircraftLocationUpdate.model';
 
 interface WeekDay {
   abbreviation: string;
@@ -59,7 +60,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   private allColumns = ['time', 'glider', 'releaseHeight', 'duration', 'pilots', 'cost', 'towplane', 'actions'];
   public columns$: Observable<string[]>;
 
+  /** Indicates if the user would prefer table or card mode. */
   public displayMode$ = new ReplaySubject<DisplayMode>(1);
+
+  public refreshAircraftLocations$ = new Subject();
+  public currentAircraftLocations$: Observable<AircraftLocationUpdate[] | null>;
+  public aircraftUpdateDate$ = new ReplaySubject<dayjs.Dayjs>(1);
 
   readonly DisplayMode = DisplayMode;
 
@@ -86,13 +92,23 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       this.settings.displayMode
     );
 
+    const today = dayjs().startOf('day');
+
     this.date$ = this.route.params.pipe(
       map(params => {
-        let date = dayjs().startOf('day');
+        let date = today;
         if (params["date"])
           date = dayjs(params["date"])
             .startOf('day');
         return date;
+      }),
+      shareReplay(1)
+    );
+
+    const isToday$: Observable<boolean> = this.date$.pipe(
+      map(date => {
+        console.log("Checking date", date);
+        return today.isSame(date)
       })
     );
 
@@ -234,6 +250,23 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
     this.isLoggedIn$ = this.user$.pipe(
       map(user => user !== null)
+    );
+    
+    this.currentAircraftLocations$ = combineLatest([
+      isToday$,
+      this.auth.isAuthenticated$,
+      this.refreshAircraftLocations$.pipe(
+        startWith(null)
+      )
+    ]).pipe(
+      switchMap(([isToday, isAuthenticated, _]) => {
+        // Only show live aircraft if we are looking at today's flights
+        if (isAuthenticated && isToday)
+          return this.fieldService.getFleet(Airfields.Chilhowee);
+        else
+          return of(null);
+      }),
+      tap(() => this.aircraftUpdateDate$.next(dayjs()))
     );
   }
 
@@ -385,6 +418,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
     return value ?
       Math.round(UnitUtils.mToFt(value)!)
       : null;
+  }
+
+  public kmToNm(value: number): number {
+    return Math.round(UnitUtils.kmToNm(value)! * 10) / 10.0;
   }
 
   public setDisplayMode(mode: DisplayMode) {

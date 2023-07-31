@@ -10,5 +10,7 @@ namespace GliderView.Service.Models
     {
         public string FaaId { get; set; }
         public int ElevationMeters { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 }

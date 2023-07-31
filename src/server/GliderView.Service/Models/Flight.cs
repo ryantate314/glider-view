@@ -1,4 +1,7 @@
-﻿namespace GliderView.Service.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace GliderView.Service.Models
 {
     public class Flight
     {
