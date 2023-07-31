@@ -250,6 +250,15 @@ namespace GliderView.UnitTests
                 ),
                 Times.Once()
             );
+
+            // The Aircraft record is updated with the new tracker
+            _mockFlightRepository.Verify(x =>
+                x.SetTrackerId(
+                    aircraftId,
+                    tracker
+                ),
+                Times.Once()
+            );
         }
 
 

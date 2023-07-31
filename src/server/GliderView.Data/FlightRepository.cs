@@ -842,5 +842,19 @@ WHERE A.Registration = @registrationId
                 return await con.QueryFirstOrDefaultAsync<Aircraft?>(sql, new { registrationId });
             }
         }
+
+        public async Task SetTrackerId(Guid aircraftId, string trackerId)
+        {
+            const string sql = @"
+UPDATE dbo.Aircraft
+    SET TrackerId = @trackerId
+WHERE AircraftGuid = @aircraftId
+    AND IsDeleted = 0;
+";
+            using (var con = await GetOpenConnectionAsync())
+            {
+                await con.ExecuteAsync(sql, new { aircraftId, trackerId});
+            }
+        }
     }
 }

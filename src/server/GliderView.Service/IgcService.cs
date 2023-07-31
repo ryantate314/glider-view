@@ -220,6 +220,11 @@ namespace GliderView.Service
             {
                 aircraft = await AddAircraft(trackerId, file);
             }
+            else if (!String.Equals(trackerId, aircraft.TrackerId))
+            {
+                // Detect if the Tracker changes for an aircraft
+                await _flightRepo.SetTrackerId(aircraft.AircraftId, trackerId);
+            }
 
             var flight = new Flight()
             {
