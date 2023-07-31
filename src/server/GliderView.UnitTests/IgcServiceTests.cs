@@ -98,9 +98,6 @@ namespace GliderView.UnitTests
                         && search.EndDate == FILE_1_EVENTDATE.AddDays(1))
             )).ReturnsAsync(() => new List<Flight>());
 
-            _mockFlightRepository.Setup(x => x.GetAircraftByTrackerId(tracker))
-                .ReturnsAsync(() => null);
-
             _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
                 .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
 
@@ -146,9 +143,6 @@ namespace GliderView.UnitTests
                         && search.EndDate == FILE_1_EVENTDATE.AddDays(1))
             )).ReturnsAsync(() => new List<Flight>());
 
-            _mockFlightRepository.Setup(x => x.GetAircraftByTrackerId(tracker))
-                .ReturnsAsync(() => null);
-
             _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
                 .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
 
@@ -166,7 +160,6 @@ namespace GliderView.UnitTests
         [Test]
         public async Task ReadAndProcess_CrossesMidnight()
         {
-            const string tracker = FILE_2_Tracker;
             const string airfield = "92A";
             string fileName = @"\2023\05\06\92A\" + FILE_2_FILENAME;
 
@@ -181,9 +174,6 @@ namespace GliderView.UnitTests
                 It.IsAny<FlightSearch>()
             )).ReturnsAsync(() => new List<Flight>());
 
-            _mockFlightRepository.Setup(x => x.GetAircraftByTrackerId(tracker))
-                .ReturnsAsync(() => null);
-
             _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
                 .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
 
@@ -194,15 +184,74 @@ namespace GliderView.UnitTests
             await _service.ReadAndProcess(airfield, fileName);
 
             // Assert
-
             _mockFlightRepository.Verify(x => x.AddFlight(
                     // Ensure the code correctly advanced the date to the following day when crossing midnight
-                    It.Is<Flight>(flight => flight.Waypoints!.Any(waypoint => waypoint.Time.Date == FILE_2_EVENTDATE.AddDays(1).Date))
+                    It.Is<Flight>(flight => flight.Waypoints!.Any(waypoint => waypoint.Time.Date == FILE_2_EVENTDATE.AddDays(-1).Date)
+                        && flight.Waypoints!.Any(waypoint => waypoint.Time.Date == FILE_2_EVENTDATE.Date)
+                    )
                 ),
                 Times.Once()
             );
 
         }
+
+        [Test]
+        public async Task OgnRegistrationChanges()
+        {
+            const string tracker = FILE_1_Tracker;
+            const string airfield = "92A";
+
+            Guid aircraftId = Guid.NewGuid();
+            Guid flightId = Guid.NewGuid();
+
+            byte[] igcFileBytes = System.Text.Encoding.UTF8.GetBytes(FILE_1);
+
+            Flight? generatedFlight = null;
+
+            // Setup
+            _mockFlightBookClient.Setup(x => x.DownloadIgcFile(tracker, null, null))
+                .ReturnsAsync(() => new MemoryStream(igcFileBytes));
+
+            // No existing flights
+            _mockFlightRepository.Setup(x => x.GetFlights(
+                It.IsAny<FlightSearch>()
+            )).ReturnsAsync(() => new List<Flight>());
+
+            var aircraft = new Aircraft()
+            {
+                AircraftId = aircraftId,
+                IsGlider = false,
+                RegistrationId = FILE_1_REGISTRATION,
+                // Tracker ID does not match
+                TrackerId = FILE_2_Tracker
+            };
+            _mockFlightRepository.Setup(x => x.GetAircraftByRegistration(FILE_1_REGISTRATION))
+                .ReturnsAsync(() => aircraft);
+
+            _mockFlightRepository.Setup(x => x.AddAircraft(It.IsAny<Aircraft>()))
+                .Callback<Aircraft>((aircraft) => aircraft.AircraftId = aircraftId);
+
+            _mockFlightRepository.Setup(x => x.AddFlight(It.IsAny<Flight>()))
+                .Callback<Flight>(flight =>
+                {
+                    flight.FlightId = flightId;
+                    generatedFlight = flight;
+                });
+
+            // Execute
+            await _service.DownloadAndProcess(airfield, tracker);
+
+            // Assert
+            _mockFlightRepository.Verify(x =>
+                x.AddFlight(
+                    It.Is<Flight>(flight =>
+                        flight.Aircraft != null && flight.Aircraft.AircraftId == aircraftId
+                    )
+                ),
+                Times.Once()
+            );
+        }
+
 
         #region IgcFiles
         private const string FILE_1_FILENAME = "2022-11-13_N2750H.C7720C.igc";
@@ -351,9 +400,12 @@ B1712153513443N08435197WA0000000225
 B1712233513507N08435148WA0000000226
 ";
         // File 2 traverses a midnight boundary
-        private const string FILE_2_FILENAME = "2023-05-06_N2399U.C7720C.igc";
-        private const string FILE_2_Tracker = "C7720C";
+        private const string FILE_2_FILENAME = "2023-05-06_N2399U.C7720D.igc";
+        private const string FILE_2_Tracker = "C7720D";
         private const string FILE_2_REGISTRATION = "N2399U";
+        /// <summary>
+        /// 2023-05-06
+        /// </summary>
         private DateTime FILE_2_EVENTDATE = new DateTime(2023, 05, 06);
         private const string FILE_2 = @"AOGNOGN
 HFDTE060523
