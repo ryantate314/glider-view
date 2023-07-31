@@ -254,7 +254,7 @@ namespace GliderView.Service
             {
                 // Find tow plane/glider
                 Flight? relatedFlight = FindRelatedFlight(flights, flight);
-                if (relatedFlight != null && aircraft.IsGlider == true)
+                if (relatedFlight != null && aircraft.IsGlider == true && relatedFlight.Aircraft!.IsGlider == false)
                 {
                     // We are currently adding the glider flight
                     flight.TowFlight = new Flight()
@@ -264,7 +264,7 @@ namespace GliderView.Service
                 }
                 await _flightRepo.AddFlight(flight);
 
-                if (relatedFlight != null && aircraft.IsGlider == false)
+                if (relatedFlight != null && aircraft.IsGlider == false && relatedFlight.Aircraft.IsGlider == true)
                 {
                     // We are currently adding the towplane flight
                     await _flightRepo.AssignTow(relatedFlight.FlightId, flight.FlightId);
@@ -296,7 +296,8 @@ namespace GliderView.Service
 
         private Flight? FindRelatedFlight(IEnumerable<Flight> flightsOnDate, Flight flight)
         {
-            KeyValuePair<Flight, double> closestFlight = flightsOnDate.Select(compareFlight => 
+            KeyValuePair<Flight, double> closestFlight = flightsOnDate.Where(x => x.Aircraft != null)
+                .Select(compareFlight => 
                 new KeyValuePair<Flight, double>(
                     compareFlight,
                     Math.Abs((flight.StartDate - compareFlight.StartDate).TotalSeconds)
