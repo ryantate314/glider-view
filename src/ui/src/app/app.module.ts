@@ -56,6 +56,7 @@ import { UNAUTHORIZED_INTERCEPTOR } from './interceptors/unauthorized.intercepto
 import { MenuBarComponent } from './components/menu-bar/menu-bar.component';
 import { ErrorComponent } from './components/error/error.component';
 import { PasswordModalComponent } from './components/password-modal/password-modal.component';
+import { CookieModule } from 'ngx-cookie';
 
 Chart.register(Annotation);
 
@@ -107,6 +108,7 @@ Marker.prototype.options.icon = iconDefault;
     BrowserAnimationsModule,
     ReactiveFormsModule,
     QRCodeModule,
+    CookieModule.withOptions(),
 
     MatCardModule,
     MatToolbarModule,

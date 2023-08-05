@@ -1,12 +1,15 @@
 import { Injectable } from '@angular/core';
 import { DisplayMode } from '../models/display-mode';
+import { CookieService } from 'ngx-cookie';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SettingsService {
 
-  constructor() { }
+  constructor(
+    private readonly cookies: CookieService
+  ) { }
 
   private getItem(key: string): string | null {
     return sessionStorage.getItem(key);
@@ -35,13 +38,13 @@ export class SettingsService {
   }
 
   public get showPricing(): boolean | null {
-    const value = this.getItem('showPricing');
-    return value === null
+    const value = this.cookies.get('showPricing');
+    return value === undefined
       ? null
       : value === "true";
   }
 
   public set showPricing(value: boolean | null) {
-    this.setItem('showPricing', (!!value) ? "true" : "false");
+    this.cookies.put('showPricing', (!!value) ? "true" : "false");
   }
 }
