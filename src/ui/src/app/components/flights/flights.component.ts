@@ -49,6 +49,8 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public canAssignPilots$: Observable<boolean>;
   public canManageFlights$: Observable<boolean>;
 
+  public showPricing$ = new ReplaySubject<boolean>(1);
+
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
 
@@ -98,18 +100,36 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       shareReplay(1)
     );
 
-    this.columns$ = this.auth.isAuthenticated$.pipe(
-      map(isAuthenticated => isAuthenticated ?
-        this.allColumns
-        : this.allColumns.filter(x => x != "pilots" && x != "cost")
-      )
+    this.columns$ = combineLatest([
+      this.auth.isAuthenticated$,
+      this.showPricing$
+    ]).pipe(
+      map(([isAuthenticated, showPricing]) => {
+        let columns = this.allColumns;
+        if (!isAuthenticated)
+          columns = columns.filter(x => x != "pilots" && x != "cost");
+        if (!showPricing)
+          columns = columns.filter(x => x != "cost");
+        return columns;
+      })
     );
 
-    const includes$ = this.auth.isAuthenticated$.pipe(
-      map(isAuthenticated => isAuthenticated ?
-          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_COST}`
-        : FlightService.INCLUDE_STATISTICS
+    const includes$ = combineLatest([
+      this.auth.isAuthenticated$,
+      this.showPricing$.pipe(
+        distinctUntilChanged(),
+        // Allow the first entry through, or when adding pricing
+        filter((value, index) => index === 0 || value === true)
       )
+    ]).pipe(
+      map(([isAuthenticated, showPricing]) => {
+        let includes = [FlightService.INCLUDE_STATISTICS];
+        if (isAuthenticated)
+          includes = [...includes, FlightService.INCLUDE_PILOTS, FlightService.INCLUDE_COST];
+        if (!showPricing)
+          includes = includes.filter(x => x != FlightService.INCLUDE_COST);
+        return includes.join(',');
+      })
     );
 
     this.allFlights$ = combineLatest([
@@ -240,6 +260,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
         : `Flights - ${date.format('M/D/YYYY')}`)
     ).subscribe(title =>
       this.title.setTitle(title)
+    );
+
+    this.showPricing$.next(
+      this.settings.showPricing ?? false
     );
   }
 
@@ -465,5 +489,14 @@ export class FlightsComponent implements OnInit, AfterViewInit {
           flight.statistics!.releaseHeight! - field!.elevationMeters
         ))
       )
+  }
+
+  public togglePricing() {
+    of(true).pipe(
+      withLatestFrom(this.showPricing$),
+    ).subscribe(([_, showPricing]) => {
+      this.settings.showPricing = !showPricing;
+      this.showPricing$.next(!showPricing);
+    });
   }
 }

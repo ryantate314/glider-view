@@ -69,6 +69,9 @@
                     <button mat-menu-item (click)="setDisplayMode(DisplayMode.Card)" *ngIf="(displayMode$ | async) != DisplayMode.Card">
                         <mat-icon class="material-icons-outlined">view_agenda</mat-icon> Card View
                     </button>
+                    <button mat-menu-item (click)="togglePricing()">
+                        <mat-icon class="material-icons-outlined">attach_money</mat-icon> {{ (showPricing$ | async) ? "Hide" : "Show" }} Pricing Info
+                    </button>
                     <button mat-menu-item (click)="uploader.click()" *ngIf="canManageFlights$ | async">
                         <mat-icon class="material-icons-outlined">upload</mat-icon> Upload IGC File
                     </button>
