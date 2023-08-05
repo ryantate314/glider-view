@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, catchError, combineLatest, distinctUntilChanged, filter, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, throwError, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, defer, distinctUntilChanged, filter, iif, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, throwError, withLatestFrom } from 'rxjs';
 import { Aircraft, Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -21,6 +21,7 @@ import { SnackbarService } from 'src/app/services/snackbar.service';
 import { AirfieldService } from 'src/app/services/airfield.service';
 import { Airfields } from 'src/app/models/airfield.model';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
+import { PasswordModalComponent } from '../password-modal/password-modal.component';
 
 interface WeekDay {
   abbreviation: string;
@@ -45,9 +46,12 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public weekDays$: Observable<WeekDay[]>;
   public isLoading$ = new BehaviorSubject<boolean>(true);
   public user$: Observable<User | null>;
+  public isLoggedIn$: Observable<boolean>;
 
   public canAssignPilots$: Observable<boolean>;
   public canManageFlights$: Observable<boolean>;
+
+  public showPricing$ = new ReplaySubject<boolean>(1);
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -98,18 +102,36 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       shareReplay(1)
     );
 
-    this.columns$ = this.auth.isAuthenticated$.pipe(
-      map(isAuthenticated => isAuthenticated ?
-        this.allColumns
-        : this.allColumns.filter(x => x != "pilots" && x != "cost")
-      )
+    this.columns$ = combineLatest([
+      this.auth.isAuthenticated$,
+      this.showPricing$
+    ]).pipe(
+      map(([isAuthenticated, showPricing]) => {
+        let columns = this.allColumns;
+        if (!isAuthenticated)
+          columns = columns.filter(x => x != "pilots" && x != "cost");
+        if (!showPricing)
+          columns = columns.filter(x => x != "cost");
+        return columns;
+      })
     );
 
-    const includes$ = this.auth.isAuthenticated$.pipe(
-      map(isAuthenticated => isAuthenticated ?
-          `${FlightService.INCLUDE_STATISTICS},${FlightService.INCLUDE_PILOTS},${FlightService.INCLUDE_COST}`
-        : FlightService.INCLUDE_STATISTICS
+    const includes$ = combineLatest([
+      this.auth.isAuthenticated$,
+      this.showPricing$.pipe(
+        distinctUntilChanged(),
+        // Allow the first entry through, or when adding pricing
+        filter((value, index) => index === 0 || value === true)
       )
+    ]).pipe(
+      map(([isAuthenticated, showPricing]) => {
+        let includes = [FlightService.INCLUDE_STATISTICS];
+        if (isAuthenticated)
+          includes = [...includes, FlightService.INCLUDE_PILOTS, FlightService.INCLUDE_COST];
+        if (!showPricing)
+          includes = includes.filter(x => x != FlightService.INCLUDE_COST);
+        return includes.join(',');
+      })
     );
 
     this.allFlights$ = combineLatest([
@@ -208,6 +230,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
     this.canAssignPilots$ = this.auth.hasScope(Scopes.AssignPilots);
     this.canManageFlights$ = this.auth.hasScope(Scopes.ManageFlights);
+
+    this.isLoggedIn$ = this.user$.pipe(
+      map(user => user !== null)
+    );
   }
 
   private groupFlightsIntoDays(date: dayjs.Dayjs, flights: Flight[]): WeekDay[] {
@@ -240,6 +266,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
         : `Flights - ${date.format('M/D/YYYY')}`)
     ).subscribe(title =>
       this.title.setTitle(title)
+    );
+
+    this.showPricing$.next(
+      this.settings.showPricing ?? false
     );
   }
 
@@ -465,5 +495,41 @@ export class FlightsComponent implements OnInit, AfterViewInit {
           flight.statistics!.releaseHeight! - field!.elevationMeters
         ))
       )
+  }
+
+  public togglePricing() {
+    of(true).pipe(
+      withLatestFrom(this.showPricing$),
+      map(([_, showPricing]) => !showPricing),
+      switchMap(showPricing =>
+        iif(
+          () => showPricing,
+          // Require the user to confirm their password before displaying pricing info.
+          this.confirmShowPricing(),
+          of(false)
+        )
+      ),
+    ).subscribe(showPricing => {
+      this.settings.showPricing = showPricing;
+      this.showPricing$.next(showPricing);
+    });
+  }
+
+  private confirmShowPricing(): Observable<boolean> {
+    return defer(() => {
+      const modal = this.dialog.open(
+        PasswordModalComponent,
+        {
+          data: {
+            note: "Please confirm your password to display pricing information on the dashboard."
+          },
+          panelClass: 'dialog-md'
+        }
+      );
+  
+      return modal.afterClosed().pipe(
+        map(confirmed => !!confirmed)
+      );
+    });
   }
 }

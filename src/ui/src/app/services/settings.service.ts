@@ -8,7 +8,7 @@ export class SettingsService {
 
   constructor() { }
 
-  private getItem(key: string) {
+  private getItem(key: string): string | null {
     return sessionStorage.getItem(key);
   }
 
@@ -32,5 +32,16 @@ export class SettingsService {
   public get displayMode() {
     const value = <DisplayMode | null>this.getItem('displayMode');
     return value ?? DisplayMode.Table;
+  }
+
+  public get showPricing(): boolean | null {
+    const value = this.getItem('showPricing');
+    return value === null
+      ? null
+      : value === "true";
+  }
+
+  public set showPricing(value: boolean | null) {
+    this.setItem('showPricing', (!!value) ? "true" : "false");
   }
 }
