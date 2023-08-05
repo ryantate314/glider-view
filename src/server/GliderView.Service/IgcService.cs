@@ -207,6 +207,7 @@ namespace GliderView.Service
         {
             DateTime eventDate = file.DateOfFlight;
 
+            // Get flights on the same day to look for the corresponding tow flight and prevent duplicates
             var search = new FlightSearch()
             {
                 StartDate = eventDate.Date,
@@ -214,11 +215,15 @@ namespace GliderView.Service
             };
             var flights = await _flightRepo.GetFlights(search);
 
-            Aircraft? aircraft = await _flightRepo.GetAircraftByTrackerId(trackerId);
-
+            Aircraft? aircraft = await _flightRepo.GetAircraftByRegistration(file.GliderId);
             if (aircraft == null)
             {
                 aircraft = await AddAircraft(trackerId, file);
+            }
+            else if (!String.Equals(trackerId, aircraft.TrackerId))
+            {
+                // Detect if the Tracker changes for an aircraft
+                await _flightRepo.SetTrackerId(aircraft.AircraftId, trackerId);
             }
 
             var flight = new Flight()
