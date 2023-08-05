@@ -40,12 +40,21 @@ namespace GliderView.Service
         {
             Task<Flight?> flightTask = _repo.GetFlight(flightId);
             Task<List<Waypoint>> waypointTask = _repo.GetWaypoints(flightId);
+            // Get the towplane stats for more accurate data
+            Task<FlightStatistics> towStats = (await flightTask)?.TowFlight != null
+                ? _repo.GetStatistics((await flightTask)!.TowFlight!.FlightId)
+                : Task.FromResult(new FlightStatistics()
+            );
 
-            await Task.WhenAll(flightTask, waypointTask);
+            await Task.WhenAll(flightTask, waypointTask, towStats);
 
             var flight = flightTask.Result;
             if (flight == null)
                 throw new InvalidOperationException("Flight not found.");
+
+            // Attach the towplane stats to the flight object
+            if (flight.TowFlight != null)
+                flight.TowFlight.Statistics = towStats.Result;
 
             flight.Waypoints = waypointTask.Result;
 

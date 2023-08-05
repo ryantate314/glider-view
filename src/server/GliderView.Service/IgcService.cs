@@ -220,9 +220,9 @@ namespace GliderView.Service
             {
                 aircraft = await AddAircraft(trackerId, file);
             }
+            // Detect if the Tracker changes for an aircraft
             else if (!String.Equals(trackerId, aircraft.TrackerId))
             {
-                // Detect if the Tracker changes for an aircraft
                 await _flightRepo.SetTrackerId(aircraft.AircraftId, trackerId);
             }
 
@@ -246,6 +246,29 @@ namespace GliderView.Service
                 throw new FlightAlreadyExistsException(trackerId, flight.StartDate);
             }
 
+            Flight? relatedFlight = FindRelatedFlight(flights, flight);
+
+            // Find the tow plane if this is a glider
+            if (aircraft.IsGlider == true && relatedFlight?.Aircraft != null && relatedFlight.Aircraft.IsGlider == false)
+            {
+                // We are currently adding the glider flight
+                flight.TowFlight = new Flight()
+                {
+                    FlightId = relatedFlight.FlightId,
+                };
+
+                // Attach the tow flight statistics to improve the stat calculations for the glider.
+                try
+                {
+                    flight.TowFlight.Statistics = await _flightRepo.GetStatistics(relatedFlight.FlightId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error getting statistics for tow plane flight: {0}", relatedFlight.FlightId);
+                }
+            }
+           
+            // Calculate flight statistics such as max altitude, release height, etc.
             try
             {
                 flight.Statistics = _flightAnalyzer.Analyze(flight);
@@ -255,32 +278,38 @@ namespace GliderView.Service
                 _logger.LogError(ex, "Unable to analyze flight");
             }
 
+            // Save new flight to the DB
             try
             {
-                // Find tow plane/glider
-                Flight? relatedFlight = FindRelatedFlight(flights, flight);
-                if (relatedFlight != null && aircraft.IsGlider == true && relatedFlight.Aircraft!.IsGlider == false)
-                {
-                    // We are currently adding the glider flight
-                    flight.TowFlight = new Flight()
-                    {
-                        FlightId = relatedFlight.FlightId
-                    };
-                }
                 await _flightRepo.AddFlight(flight);
-
-                if (relatedFlight != null && aircraft.IsGlider == false && relatedFlight.Aircraft.IsGlider == true)
-                {
-                    // We are currently adding the towplane flight
-                    await _flightRepo.AssignTow(relatedFlight.FlightId, flight.FlightId);
-                }
-
                 await _flightRepo.UpsertFlightStatistics(flight);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error adding flight: {aircraft.RegistrationId} {flight.StartDate}");
                 throw;
+            }
+
+            // If we are currently adding the tow plane after the glider has landed (Should only happen for rope breaks when the glider lands first)
+            if (aircraft.IsGlider == false && relatedFlight?.Aircraft != null && relatedFlight.Aircraft.IsGlider == true)
+            {
+                await _flightRepo.AssignTow(relatedFlight.FlightId, flight.FlightId);
+
+                // Recalculate the glider statistics now that we have a tow flight for extra data
+                try
+                {
+                    var gliderFlight = await _flightRepo.GetFlight(relatedFlight.FlightId);
+                    gliderFlight.Waypoints = await _flightRepo.GetWaypoints(relatedFlight.FlightId);
+                    gliderFlight.TowFlight = flight;
+
+                    gliderFlight.Statistics = _flightAnalyzer.Analyze(gliderFlight);
+
+                    await _flightRepo.UpsertFlightStatistics(gliderFlight);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error re-calculating glider stats after the towplane landed. Glider flight: {0}, Towplane flight: {1}", relatedFlight.FlightId, flight.FlightId);
+                }
             }
 
             return flight;

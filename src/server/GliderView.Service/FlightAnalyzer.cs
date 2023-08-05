@@ -57,28 +57,28 @@ namespace GliderView.Service
             // Disable smoothing temporarily
             List<Waypoint> data = waypoints; // SmoothData(waypoints);
 
-            Waypoint? release = FindReleasePoint(data);
-            if (release != null)
+            Waypoint? releasePoint = FindReleasePoint(data);
+            if (releasePoint != null)
                 // Find original waypoint because SmoothData() performs a clone
                 //waypoints.First(x => x.WaypointId == release.WaypointId)
                     //.FlightEvent = FlightEventType.Release;
-                release.FlightEvent = FlightEventType.Release;
+                releasePoint.FlightEvent = FlightEventType.Release;
 
             var stats = new FlightStatistics()
             {
-                ReleaseHeight = release?.GpsAltitude,
+                ReleaseHeight = FindReleaseHeight(releasePoint, flight),
                 MaxAltitude = data.Max(x => x.GpsAltitude),
             };
 
-            if (release != null)
+            if (releasePoint != null)
             {
-                var flightAfterRelease = data.Where(x => x.Time > release.Time)
+                var waypointsAfterRelease = data.Where(x => x.Time > releasePoint.Time)
                     .ToList();
-                stats.DistanceTraveled = (float)FindDistance(flightAfterRelease);
+                stats.DistanceTraveled = (float)FindDistance(waypointsAfterRelease);
 
-                stats.AltitudeGained = FindAltitudeGained(flightAfterRelease);
+                stats.AltitudeGained = FindAltitudeGained(waypointsAfterRelease);
 
-                stats.MaxDistanceFromField = GetFarthestDistanceFromAirport(flightAfterRelease);
+                stats.MaxDistanceFromField = GetFarthestDistanceFromAirport(waypointsAfterRelease);
             }
 
             Waypoint? patternEntry = GetPatternEntry(waypoints);
@@ -89,6 +89,32 @@ namespace GliderView.Service
             }
 
             return stats;
+        }
+
+        /// <summary>
+        /// Uses both the glider and tow plane data to estimate the glider release height. 
+        /// </summary>
+        /// <remarks>
+        /// Because
+        /// the gliders pull up at the end of tow the <paramref name="releasePoint"/> is likely too high. Use
+        /// the tow plane max altitude instead, however, sometimes the tow plane doesn't detect a release and can
+        /// overshoot.
+        /// </remarks>
+        /// <param name="releasePoint"></param>
+        /// <param name="flight"></param>
+        /// <returns></returns>
+        private int? FindReleaseHeight(Waypoint? releasePoint, Flight flight)
+        {
+            int? height = releasePoint?.GpsAltitude;
+
+            if (flight?.TowFlight?.Statistics?.MaxAltitude != null)
+            {
+                height = height == null
+                    ? flight.TowFlight.Statistics.MaxAltitude
+                    : Math.Min(height.Value, flight.TowFlight.Statistics.MaxAltitude.Value);
+            }
+
+            return height;
         }
 
         private int FindAltitudeGained(List<Waypoint> waypoints)
