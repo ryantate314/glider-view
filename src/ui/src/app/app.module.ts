@@ -55,6 +55,7 @@ import { AssignPilotModalComponent } from './components/assign-pilot-modal/assig
 import { UNAUTHORIZED_INTERCEPTOR } from './interceptors/unauthorized.interceptor';
 import { MenuBarComponent } from './components/menu-bar/menu-bar.component';
 import { ErrorComponent } from './components/error/error.component';
+import { PasswordModalComponent } from './components/password-modal/password-modal.component';
 
 Chart.register(Annotation);
 
@@ -96,6 +97,7 @@ Marker.prototype.options.icon = iconDefault;
     AssignPilotModalComponent,
     MenuBarComponent,
     ErrorComponent,
+    PasswordModalComponent,
   ],
   imports: [
     BrowserModule,
