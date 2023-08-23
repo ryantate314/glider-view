@@ -51,7 +51,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public canAssignPilots$: Observable<boolean>;
   public canManageFlights$: Observable<boolean>;
 
-  public showPricing$ = new ReplaySubject<boolean>(1);
+  public showPricing$: Observable<boolean>;
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -76,6 +76,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   ) {
 
     this.user$ = this.auth.user$;
+    this.showPricing$ = this.settings.shouldShowPricing$;
 
     this.sortDirection$.next(
       this.settings.flightSortOrder
@@ -268,9 +269,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       this.title.setTitle(title)
     );
 
-    this.showPricing$.next(
-      this.settings.showPricing ?? false
-    );
+    
   }
 
   ngAfterViewInit(): void {
@@ -510,8 +509,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
         )
       ),
     ).subscribe(showPricing => {
-      this.settings.showPricing = showPricing;
-      this.showPricing$.next(showPricing);
+      this.settings.setShouldShowPricing(showPricing);
     });
   }
 
