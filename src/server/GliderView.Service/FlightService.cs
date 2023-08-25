@@ -113,7 +113,7 @@ namespace GliderView.Service
             await Task.WhenAll(baseRateInfo, aircraftRateInfo, field);
 
             if (baseRateInfo.Result == null)
-                throw new InvalidOperationException("No rate information found.");
+                throw new InvalidOperationException("No tow rate information found.");
             if (field.Result == null)
                 throw new InvalidOperationException("No field information found.");
 

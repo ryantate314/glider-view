@@ -216,7 +216,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
               towFlight: flight,
               waypoints: null,
               occupants: null,
-              cost: null
+              cost: flight.cost
             }
           );
       })
