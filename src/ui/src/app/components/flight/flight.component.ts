@@ -180,7 +180,8 @@ export class FlightComponent implements OnInit, AfterViewInit {
             label: 'Vertical Speed',
             data: this.calculateVerticalSpeed(flight.waypoints!),
             showLine: true,
-            yAxisID: "y1"
+            yAxisID: "y1",
+            hidden: true // Hide by default since it's really noisy
           }]
         };
         return data;
