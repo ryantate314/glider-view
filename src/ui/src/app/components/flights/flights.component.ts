@@ -262,11 +262,27 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       switchMap(([isToday, isAuthenticated, _]) => {
         // Only show live aircraft if we are looking at today's flights
         if (isAuthenticated && isToday)
-          return this.fieldService.getFleet(Airfields.Chilhowee);
+          return this.fieldService.getFleet(Airfields.Chilhowee).pipe(
+            // Put closest flights first
+            map(flights => flights.sort((a, b) => a.distanceFromFieldKm - b.distanceFromFieldKm))
+          );
         else
           return of(null);
       }),
-      tap(() => this.aircraftUpdateDate$.next(dayjs()))
+      tap(() => this.aircraftUpdateDate$.next(dayjs())),
+      map(x => ([
+        {
+          latitude: 10,
+          longitude: 12,
+          lastCheckin: new Date(),
+          model: "test",
+          altitude: 120,
+          distanceFromFieldKm: 2.4,
+          bearingFromField: 332,
+          registration: "N2750H",
+          contestId: "CN"
+        }
+      ]))
     );
   }
 
