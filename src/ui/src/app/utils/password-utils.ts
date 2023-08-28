@@ -7,10 +7,9 @@ export function passwordComplexityValidator(control: AbstractControl) {
       return null;
   
     if (password.length < 8
-        || !/[A-Z]/.test(password)
         || !/[0-9]/.test(password))
       return {
-        'password': "Password must be at least 8 characters and contain a capital letter and a number."
+        'password': "Password must be at least 8 characters and contain a number."
       };
   
     return null;
