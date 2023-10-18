@@ -72,8 +72,10 @@ export class AuthService {
           this._isAuthenticated$.next(false);
       });
     }
-    else
+    else {
       this._isAuthenticated$.next(false);
+      this._user$.next(null);
+    }
 
     this.isAuthenticated$.subscribe(isAuthenticated =>
       // Persist login state to session storage
