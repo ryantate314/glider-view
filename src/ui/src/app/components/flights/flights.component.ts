@@ -57,7 +57,6 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public canManageFlights$: Observable<boolean>;
 
   public showPricing$: Observable<boolean>;
-  public showLiveArcraft$: Observable<boolean>;
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -68,7 +67,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   /** Indicates if the user would prefer table or card mode. */
   public displayMode$ = new ReplaySubject<DisplayMode>(1);
 
-  public refreshAircraftLocations$ = new Subject();
+  public showLiveArcraft$: Observable<boolean>;
   public currentAircraftLocations$: Observable<LiveAircraftLocation[] | null>;
 
   readonly DisplayMode = DisplayMode;
@@ -276,7 +275,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       isToday$,
       this.showLiveArcraft$,
       this.auth.isAuthenticated$,
-      this.refreshAircraftLocations$.pipe(
+      this.refreshFlights$.pipe(
         startWith(null)
       )
     ]).pipe(
