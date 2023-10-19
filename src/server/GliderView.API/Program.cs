@@ -1,5 +1,7 @@
+using GliderView.Adapters;
 using GliderView.Data;
 using GliderView.Service;
+using GliderView.Service.Adapters;
 using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
 using GliderView.Service.Repositories;
@@ -8,6 +10,7 @@ using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using NLog.Extensions.Logging;
 using NLog.Web;
@@ -83,11 +86,16 @@ namespace GliderView.API
             //services.AddTransient<IFaaDatabaseProvider, FaaDatabaseProvider>();
             services.AddTransient<IOgnDeviceDatabaseProvider, OgnDeviceDatabaseProvider>();
             services.AddTransient<IFlightBookClient>(services =>
-                new FlightBookClient(config["flightBookApiUrl"]!, services.GetRequiredService<IHttpClientFactory>())
+                new FlightBookClient(
+                    config["flightBookApiUrl"]!,
+                    services.GetRequiredService<IHttpClientFactory>(),
+                    services.GetRequiredService<IMemoryCache>()
+                )
             );
             services.AddTransient<FlightAnalyzer>();
             services.AddTransient<IgcService>();
             services.AddTransient<FlightService>();
+            services.AddTransient<IAirfieldService, AirfieldService>();
             services.AddSingleton<IFlightAnalyzer, FlightAnalyzer>();
             services.AddTransient<UserService>();
             services.AddTransient<IPasswordHasher<User>, PasswordHasher<User>>();

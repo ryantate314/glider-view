@@ -1,9 +1,12 @@
-﻿using GliderView.Service.Exeptions;
+﻿using GliderView.Service.Adapters;
+using GliderView.Service.Exeptions;
 using GliderView.Service.Models;
+using GliderView.Service.Models.OgnDatabaseProvider;
 using GliderView.Service.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
@@ -353,9 +356,9 @@ namespace GliderView.Service
 
             try
             {
-                OgnDeviceDatabaseProvider.AircraftInfo? aircraft = await _ognProvider.GetAircraftInfo(trackerId);
+                AircraftInfo? aircraft = await _ognProvider.GetAircraftInfo(trackerId);
 
-                isGlider = aircraft?.AircraftType == OgnDeviceDatabaseProvider.AircraftType.Glider;
+                isGlider = aircraft?.AircraftType == AircraftType.Glider;
             }
             catch (Exception ex)
             {

@@ -1,23 +1,19 @@
-﻿using HtmlAgilityPack;
+﻿using GliderView.Service.Adapters;
+using GliderView.Service.Models.FaaDatabase;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Xml.XPath;
 
 namespace GliderView.Service
 {
     /// <inheritdoc/>
     public class FaaDatabaseProvider : IFaaDatabaseProvider
     {
-        public class Aircraft
-        {
-            public string TypeAircraft { get; set; }
-
-            public const string TYPE_GLIDER = "Glider";
-        }
+        
 
         private readonly IHttpClientFactory _httpClient;
 
@@ -33,7 +29,7 @@ namespace GliderView.Service
         {
             string url = FaaNNumberLookupUrl + nNumber;
 
-            string html = null;
+            string? html = null;
 
             using (var client = _httpClient.CreateClient())
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))

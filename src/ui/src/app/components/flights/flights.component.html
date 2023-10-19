@@ -29,6 +29,24 @@
             </div>
         </nav>
 
+        <div id="current-flights" class="mt-3" *ngIf="currentAircraftLocations$ | async as currentAircraftLocations">
+            <ul class="list-group list-group-horizontal">
+                <li class="list-group-item" *ngFor="let aircraft of currentAircraftLocations">
+                    <div>
+                        <span>
+                            {{ aircraft.model }} - <span title="{{aircraft.registration}}">{{ aircraft.contestId }}</span>
+                        </span>
+                        <span class="text-align-end">
+                            {{ aircraft.age | async }}
+                        </span>
+                    </div>
+                    <div>
+                        {{ mToFt(aircraft.altitude) }}ft | {{ kmToNm(aircraft.distanceFromFieldKm) }}nm @ {{ aircraft.bearingFromField }}&deg;
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
          <!-- Heading -->
          <div class="d-md-flex m-4">
             <h1>Flights <span class="d-md-none">- {{ (date$ | async)?.toDate() | date: 'shortDate' }}</span></h1>
@@ -71,6 +89,9 @@
                     </button>
                     <button mat-menu-item (click)="togglePricing()" *ngIf="isLoggedIn$ | async">
                         <mat-icon class="material-icons-outlined">attach_money</mat-icon> {{ (showPricing$ | async) ? "Hide" : "Show" }} Pricing Info
+                    </button>
+                    <button mat-menu-item (click)="toggleLiveAircraft()" *ngIf="isLoggedIn$ | async">
+                        <mat-icon class="material-icons-outlined">near_me</mat-icon> {{ (showLiveArcraft$ | async) ? "Hide" : "Show" }} Aircraft Locations
                     </button>
                     <button mat-menu-item (click)="uploader.click()" *ngIf="canManageFlights$ | async">
                         <mat-icon class="material-icons-outlined">upload</mat-icon> Upload IGC File

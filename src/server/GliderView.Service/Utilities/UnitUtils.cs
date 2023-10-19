@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GliderView.Service
+namespace GliderView.Service.Utilities
 {
     internal static class UnitUtils
     {

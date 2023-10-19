@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, catchError, combineLatest, defer, distinctUntilChanged, filter, iif, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, throwError, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, defer, distinctUntilChanged, filter, iif, interval, map, Observable, of, ReplaySubject, share, shareReplay, startWith, Subject, switchMap, take, tap, throwError, timer, withLatestFrom } from 'rxjs';
 import { Aircraft, Flight } from 'src/app/models/flight.model';
 import { FlightService } from 'src/app/services/flight.service';
 import * as FileSaver from 'file-saver';
@@ -22,6 +22,7 @@ import { AirfieldService } from 'src/app/services/airfield.service';
 import { Airfields } from 'src/app/models/airfield.model';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { PasswordModalComponent } from '../password-modal/password-modal.component';
+import { AircraftLocationUpdate } from 'src/app/models/aircraftLocationUpdate.model';
 
 interface WeekDay {
   abbreviation: string;
@@ -29,6 +30,10 @@ interface WeekDay {
   date: Date;
   numFlights: number;
   isActive: boolean;
+}
+
+interface LiveAircraftLocation extends AircraftLocationUpdate {
+  age: Observable<string>
 }
 
 @Component({
@@ -52,6 +57,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   public canManageFlights$: Observable<boolean>;
 
   public showPricing$: Observable<boolean>;
+  public showLiveArcraft$: Observable<boolean>;
 
   private refreshFlights$ = new Subject();
   public sortDirection$ = new ReplaySubject<'asc' | 'desc'>(1);
@@ -59,7 +65,11 @@ export class FlightsComponent implements OnInit, AfterViewInit {
   private allColumns = ['time', 'glider', 'releaseHeight', 'duration', 'pilots', 'cost', 'towplane', 'actions'];
   public columns$: Observable<string[]>;
 
+  /** Indicates if the user would prefer table or card mode. */
   public displayMode$ = new ReplaySubject<DisplayMode>(1);
+
+  public refreshAircraftLocations$ = new Subject();
+  public currentAircraftLocations$: Observable<LiveAircraftLocation[] | null>;
 
   readonly DisplayMode = DisplayMode;
 
@@ -77,6 +87,7 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
     this.user$ = this.auth.user$;
     this.showPricing$ = this.settings.shouldShowPricing$;
+    this.showLiveArcraft$ = this.settings.shouldShowLiveAircraft$;
 
     this.sortDirection$.next(
       this.settings.flightSortOrder
@@ -86,13 +97,23 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       this.settings.displayMode
     );
 
+    const today = dayjs().startOf('day');
+
     this.date$ = this.route.params.pipe(
       map(params => {
-        let date = dayjs().startOf('day');
+        let date = today;
         if (params["date"])
           date = dayjs(params["date"])
             .startOf('day');
         return date;
+      }),
+      shareReplay(1)
+    );
+
+    const isToday$: Observable<boolean> = this.date$.pipe(
+      map(date => {
+        console.log("Checking date", date);
+        return today.isSame(date)
       })
     );
 
@@ -234,6 +255,69 @@ export class FlightsComponent implements OnInit, AfterViewInit {
 
     this.isLoggedIn$ = this.user$.pipe(
       map(user => user !== null)
+    );
+
+    // var fakeFlights: AircraftLocationUpdate[] = [];
+    // for (var i = 0; i < 10; i++) {
+    //   fakeFlights.push({
+    //     latitude: 10,
+    //     longitude: 12,
+    //     lastCheckin: new Date(),
+    //     model: "test",
+    //     altitude: 120,
+    //     distanceFromFieldKm: 2.4,
+    //     bearingFromField: 332,
+    //     registration: "N2750H",
+    //     contestId: "CN"
+    //   });
+    // }
+    
+    this.currentAircraftLocations$ = combineLatest([
+      isToday$,
+      this.showLiveArcraft$,
+      this.auth.isAuthenticated$,
+      this.refreshAircraftLocations$.pipe(
+        startWith(null)
+      )
+    ]).pipe(
+      switchMap(([isToday, showLiveAircraft, isAuthenticated, _]) => {
+        // Only show live aircraft if we are looking at today's flights
+        if (showLiveAircraft && isAuthenticated && isToday)
+          return this.fieldService.getFleet(Airfields.Chilhowee).pipe(
+            // Put closest flights first
+            map(flights => flights.sort((a, b) => a.distanceFromFieldKm - b.distanceFromFieldKm))
+          );
+        else
+          return of(null);
+      }),
+      // map(x => fakeFlights
+      // ),
+      map(x =>
+          x === null
+            ? null
+            : x.map(y =>
+            ({
+              ...y,
+              // formatUpdateAge returns an observable that automatically updates the time
+              age: this.formatUpdateAge(y.lastCheckin)
+            }))
+      )
+    );
+  }
+
+  private formatUpdateAge(date: Date, updateInterval: number = 5): Observable<string> {
+    const dayJsDate = dayjs(date);
+    return interval(updateInterval * 1000).pipe(
+      startWith(null),
+      map(_ => {
+        const duration = dayjs.duration(dayjs().diff(dayJsDate));
+        let output;
+        if (duration.asMinutes() > 1)
+          output = duration.format("m[m]");
+        else
+          output = duration.format("s[s]");
+        return output;
+      })
     );
   }
 
@@ -387,6 +471,10 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       : null;
   }
 
+  public kmToNm(value: number): number {
+    return Math.round(UnitUtils.kmToNm(value)! * 10) / 10.0;
+  }
+
   public setDisplayMode(mode: DisplayMode) {
     this.displayMode$.next(mode);
     this.settings.displayMode = mode;
@@ -510,6 +598,15 @@ export class FlightsComponent implements OnInit, AfterViewInit {
       ),
     ).subscribe(showPricing => {
       this.settings.setShouldShowPricing(showPricing);
+    });
+  }
+
+  public toggleLiveAircraft() {
+    of(true).pipe(
+      withLatestFrom(this.showLiveArcraft$),
+      map(([_, showLiveAircraft]) => !showLiveAircraft)
+    ).subscribe(showLiveAircraft => {
+      this.settings.setShouldShowLiveAircraft(showLiveAircraft);
     });
   }
 
