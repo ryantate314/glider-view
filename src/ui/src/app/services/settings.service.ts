@@ -13,6 +13,9 @@ export class SettingsService {
   private _updateShouldShowPricing$ = new Subject<void>();
   public shouldShowPricing$: Observable<boolean>;
 
+  private _updateShouldShowLiveAircraft$ = new Subject<void>();
+  public shouldShowLiveAircraft$: Observable<boolean>;
+
   constructor(
     private readonly cookies: CookieService,
     private readonly auth: AuthService
@@ -28,6 +31,22 @@ export class SettingsService {
           return false;
         else
           return this.cookies.get(this.generateCookieName(user.userId, "showPricing")) === "true"
+      }),
+      distinctUntilChanged(),
+      shareReplay(1)
+    );
+
+    this.shouldShowLiveAircraft$ = combineLatest([
+      this.auth.user$,
+      this._updateShouldShowLiveAircraft$.pipe(
+        startWith(null)
+      )
+    ]).pipe(
+      map(([user, _]) => {
+        if (user === null)
+          return false;
+        else
+          return this.cookies.get(this.generateCookieName(user.userId, "showLiveAircraft")) === "true"
       }),
       distinctUntilChanged(),
       shareReplay(1)
@@ -79,6 +98,31 @@ export class SettingsService {
             }
           );
           this._updateShouldShowPricing$.next();
+        }
+        else
+          console.log("Cannot set preferences. User not logged in.");
+      }),
+      switchMap(_ => of())
+    );
+    result.subscribe();
+    return result;
+  }
+
+  public setShouldShowLiveAircraft(value: boolean | null): Observable<void> {
+    const result = of(true).pipe(
+      withLatestFrom(this.auth.user$.pipe(
+        startWith(null)
+      )),
+      tap(([_, user]) => {
+        if (user !== null) {
+          this.cookies.put(
+            this.generateCookieName(user.userId, "showLiveAircraft"),
+            (!!value) ? "true" : "false",
+            {
+              expires: dayjs().add(5, 'year').toDate()
+            }
+          );
+          this._updateShouldShowLiveAircraft$.next();
         }
         else
           console.log("Cannot set preferences. User not logged in.");
