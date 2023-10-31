@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { combineLatest, iif, map, Observable, of, shareReplay, startWith, Subject, switchMap, withLatestFrom } from 'rxjs';
+import { combineLatest, iif, map, Observable, of, shareReplay, startWith, Subject, switchMap, tap, withLatestFrom } from 'rxjs';
 import { LogBookEntry } from 'src/app/models/flight.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { FlightService } from 'src/app/services/flight.service';
@@ -66,9 +66,7 @@ export class LogbookComponent implements OnInit {
       )
     );
 
-    this.page$ = this.route.queryParams.pipe(
-      map(params => params["page"] ? +params["page"] : 0)
-    );
+   
 
     this.allFlights$ = combineLatest([
       this.userId$,
@@ -84,6 +82,16 @@ export class LogbookComponent implements OnInit {
 
     this.numPages$ = this.allFlights$.pipe(
       map(x => Math.ceil(x.length / pageSize))
+    );
+
+    this.page$ = combineLatest([
+      this.route.queryParams.pipe(
+        map(x => x["page"])
+      ),
+      this.numPages$
+    ]).pipe(
+      // Default to the last page if one is not chosen
+      map(([page, numPages]) => page ? +page : numPages - 1)
     );
 
     this.pageInfo$ = combineLatest([

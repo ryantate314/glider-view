@@ -191,9 +191,19 @@ namespace GliderView.Service
             return _userRepository.GetUsers();
         }
 
-        public Task<List<LogBookEntry>> GetLogBook(Guid pilotId)
+        public async Task<List<LogBookEntry>> GetLogBook(Guid pilotId)
         {
-            return _flightRepo.GetLogBook(pilotId);
+            var flights = await _flightRepo.GetLogBook(pilotId);
+
+            var stats = await _flightRepo.GetStatistics(flights.Select(x => x.FlightId));
+
+            foreach (var flight in flights)
+            {
+                if (stats.ContainsKey(flight.FlightId))
+                    flight.Flight.Statistics = stats[flight.FlightId];
+            }
+
+            return flights;
         }
 
         public Task DeleteUser(Guid userId)
