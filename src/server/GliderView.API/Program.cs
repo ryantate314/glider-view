@@ -60,6 +60,8 @@ namespace GliderView.API
 
             app.UseExceptionMiddleware();
 
+            app.UseResponseCaching();
+
             app.MapControllers();
 
             app.Run();
